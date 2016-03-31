@@ -3,10 +3,9 @@
 {-# LANGUAGE ScopedTypeVariables       #-}
 
 module Network.Quid2.Util(
-  liftIO,forever,when,unless,try,SomeException,threadDelay,seconds
+  runWSClient,protocol,sendMsg,receiveMsg
   ,dbg,warn,info,err,dbgS,logLevel
-  ,runWSClient,send,receive,sendMsg,receiveMsg
-  ,protocol
+  ,liftIO,forever,when,unless,try,SomeException,threadDelay,seconds
   ,module X
   ) where
 
@@ -35,19 +34,6 @@ runWSClient cfg app = do
 protocol :: (Model (router a), Flat (router a)) => Connection a -> router a -> IO ()
 protocol (Connection conn) =  WS.sendBinaryData conn . flat . typedBytes
 
--- |Send a value on a typed connection
-send :: (Show a,Flat a) => Connection a -> a -> IO ()
-send (Connection conn) v = do
-  WS.sendBinaryData conn $ flat v
-  dbg ["sent",show v]
-
--- |Receive a value from a typed connection
-receive :: (Show a, Flat a) => Connection a -> IO a
-receive (Connection conn) = do
-   Right v <- unflat <$> WS.receiveData conn
-   dbg ["received",show v]
-   return v
-
 -- |Send a raw binary message on a WebSocket (untyped) connection
 sendMsg :: WS.Connection -> L.ByteString -> IO ()
 sendMsg = WS.sendBinaryData
@@ -56,12 +42,14 @@ sendMsg = WS.sendBinaryData
 receiveMsg :: WS.Connection -> IO L.ByteString
 receiveMsg conn = WS.receiveData conn
 
+-- |Setup the global logging level
 logLevel = updateGlobalLogger rootLoggerName . setLevel
 
 seconds = (* 1000000)
 
-dbgS = debugM "Router"
+-- |Utilities for logging
+dbgS = debugM "quid2-net"
 dbg = liftIO . dbgS . unwords
-err = liftIO . errorM "Router" . unwords
-warn = liftIO . warningM "Router" . unwords
-info = liftIO . infoM "Router" . unwords
+err = liftIO . errorM "quid2-net" . unwords
+warn = liftIO . warningM "quid2-net" . unwords
+info = liftIO . infoM "quid2-net" . unwords

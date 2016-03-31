@@ -4,7 +4,7 @@
 module Network.Quid2.Types(
   module Data.Typed
   ,Config(..)
-  ,Connection(..)
+  ,Connection(..),App
   ,def
   ,ByType(..)
   ,Echo(..)
@@ -27,6 +27,9 @@ instance Default Config where def = Config "quid2.net" 8080 "/ws"
 
 -- |A typed connection
 data Connection a = Connection WS.Connection
+
+ -- |An application that connects to a channel of type a and eventually returns an IO r
+type App a r = Connection a -> IO r
 
 ---------------- Routers
 

@@ -6,7 +6,7 @@ module Network.Quid2.Pipes(
   ) where
 
 import Network.Quid2.Types
-import Network.Quid2.Util
+import Network.Quid2.Run
 import Pipes
 
 -- |Produce values from a typed connection
