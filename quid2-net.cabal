@@ -1,0 +1,32 @@
+name:                quid2-net
+version:             0.1.0.0
+synopsis:            Simple, typed messaging service.
+description:         Please see README.md
+homepage:            http://github.com/tittoassini/quid2-net
+license:             BSD3
+license-file:        LICENSE
+author:              Pasqualino `Titto` Assini
+maintainer:          tittoassini@gmail.com
+copyright:           Copyright: (c) 2015 Pasqualino `Titto` Assini
+category:            Data
+build-type:          Simple
+cabal-version:       >=1.10
+
+library
+  hs-source-dirs:      src
+  exposed-modules:     Data.BitVector,Data.Pattern,Network.Quid2,Network.Quid2.Pipes,Network.Quid2.Types,Network.Quid2.Run,Network.Quid2.Util
+  build-depends:       async >= 2.1.0, base >= 4.7 && < 5, bytestring, data-default-class, flat, template-haskell, hslogger, pipes, transformers, typed, vector >= 0.11.0.0, websockets,stm
+  default-language:    Haskell2010
+
+test-suite quid2-net-test
+  type:                exitcode-stdio-1.0
+  hs-source-dirs:      test
+  main-is:             Spec.hs
+  build-depends:       base,typed,hslogger,bytestring,websockets,async >= 2.1.0,stm
+                     , quid2-net
+  ghc-options:         -threaded -rtsopts -with-rtsopts=-N
+  default-language:    Haskell2010
+
+source-repository head
+  type:     git
+  location: https://github.com/tittoassini/quid2-net
