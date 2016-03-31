@@ -91,7 +91,7 @@ quid2-net depends on other unreleased packages that are part of the quid2 suite,
 
 The first time, the installation can take a few minutes.
 
-To verify that all works, start up the [quid2-chat](/..) program:
+To verify that all works, start up the `quid2-chat` program:
 
 ```
 stack exec quid2-chat
