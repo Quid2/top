@@ -17,11 +17,6 @@ import Control.Concurrent.Async
 import  Control.Concurrent.STM
 import Data.Word
 
--- import Data.Chronograph
--- import Criterion.Types hiding (measure)
--- import Criterion.Measurement
--- mm = runBenchmark (Benchmarkable $ print) 1
-
 t = main
 
 -- TODO: test by sending incorrect router value
