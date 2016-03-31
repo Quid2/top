@@ -82,3 +82,42 @@ Read the API, in particular:
 * [Network.Quid2.Run](src/Network/Quid2/Run.hs)
 * [Network.Quid2.Pipes](src/Network/Quid2/Pipes.hs)  
 * [Network.Quid2.Types](src/Network/Quid2/Types.hs)  
+
+### Installation
+
+quid2-net depends on other unreleased packages that are part of the quid2 suite, so that's what we need to install:
+
+`git clone --recursive https://github.com/tittoassini/quid2.git;cd quid2;stack build`
+
+The first time, the installation can take a few minutes.
+
+To verify that all works, start up the [quid2-chat](/..) program:
+
+```
+stack exec quid2-chat
+
+Enter your name:
+titto
+
+Help:
+To send a message: just enter it and press return.
+To exit: Ctrl-D.
+
+Current Subject: (quid2-net)
+
+Hello!
+```
+
+That's it!
+
+##### To update to the latest release:
+
+`cd quid2`
+
+`git pull;git submodule update --remote;stack build`
+
+### Downtime
+quid2-net might be down for upgrades every Monday between 7 and 8 am (UTC+1 [DST](https://en.wikipedia.org/wiki/Daylight_saving_time)).
+
+### Support
+Problems? Questions? Open an **Issue** on this repository or write directly to *titto* at: *tittoassini@gmail.com*
