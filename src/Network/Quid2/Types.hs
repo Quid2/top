@@ -26,8 +26,8 @@ data Config = Config {ip::String,port::Int,path::String}
 -- TODO: point to failover ip
 -- MAYBE: retrieve at a fixed address a list of servers' IP and then map the request by the 1-byte hash of the router type (eg. servers=[ip1,ip2] hash=x92 -> ip2)
 -- MAYBE:use a fixed range of ips (say 256)
--- instance Default Config where def = Config "quid2.net" 8080 "/ws"
-instance Default Config where def = Config "127.0.0.1" 8080 "/ws"
+instance Default Config where def = Config "quid2.net" 8080 "/ws"
+-- instance Default Config where def = Config "127.0.0.1" 8080 "/ws"
 
 -- |A typed connection
  -- data Connection a = Connection WS.Connection
