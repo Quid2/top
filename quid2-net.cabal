@@ -14,8 +14,11 @@ cabal-version:       >=1.10
 
 library
   hs-source-dirs:      src
-  exposed-modules:     Data.BitVector,Data.Pattern,Network.Quid2,Network.Quid2.Pipes,Network.Quid2.Types,Network.Quid2.Run,Network.Quid2.Util
-  build-depends:       async >= 2.1.0, base >= 4.7 && < 5, bytestring, data-default-class, flat, template-haskell, hslogger, pipes, transformers, typed, vector >= 0.11.0.0, websockets,stm
+  exposed-modules:     Data.BitVector,Data.Pattern,Network.Quid2,Network.Quid2.Pipes,Network.Quid2.Repo,Network.Quid2.Types,Network.Quid2.Run,Network.Quid2.Util,Network.Quid2.WebSockets,Repo.Types
+  build-depends:       async, base >= 4.7 && < 5, bytestring, data-default-class, flat, template-haskell, hslogger, pipes, transformers, typed, vector >= 0.11.0.0, websockets,stm,invariant
+                       -- ,ghcjs-websockets
+  if impl(ghcjs)
+    build-depends:     ghcjs-base        >= 0.2 && < 0.3
   default-language:    Haskell2010
 
 executable quid2-hello
@@ -28,7 +31,7 @@ executable quid2-hello
 executable quid2-chat
   hs-source-dirs:      app
   main-is:             Chat/chat.hs
-  other-modules:       Chat.Model
+  other-modules:       Chat.Model,Chat.Util
   ghc-options:         -threaded -rtsopts -with-rtsopts=-N
   build-depends:       base,transformers,async,pipes,typed,quid2-net
   default-language:    Haskell2010
@@ -39,6 +42,29 @@ executable quid2-chat-history
   other-modules:       Chat.Model
   ghc-options:         -threaded -rtsopts -with-rtsopts=-N
   build-depends:       base,transformers,pipes,typed,quid2-net
+  default-language:    Haskell2010
+
+executable quid2-signed
+  hs-source-dirs:      app
+  main-is:             signed.hs
+  ghc-options:         -threaded -rtsopts -with-rtsopts=-N
+  build-depends:       base,transformers,bytestring,ed25519,typed,quid2-net
+  default-language:    Haskell2010
+
+executable quid2-sensor
+  hs-source-dirs:      app
+  main-is:             Sensor/sensor1.hs
+  other-modules:       Sensor.Model1
+  ghc-options:         -threaded -rtsopts -with-rtsopts=-N
+  build-depends:       base,typed,quid2-net
+  default-language:    Haskell2010
+
+executable quid2-sensor-check
+  hs-source-dirs:      app
+  main-is:             Sensor/sensor-check1.hs
+  other-modules:       Sensor.Model1
+  ghc-options:         -threaded -rtsopts -with-rtsopts=-N
+  build-depends:       base,typed,quid2-net
   default-language:    Haskell2010
 
 test-suite quid2-net-test

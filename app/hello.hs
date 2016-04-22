@@ -4,9 +4,9 @@ import Network.Quid2
 -- |Send a message and then print out all messages received
 main = runClient def ByType $ \conn -> do
   logLevel DEBUG
-  send conn Message {fromUser="robin",content=TextMessage "Hello!"}
+  output conn Message {fromUser="robin",content=TextMessage "Hello!"}
   loop conn
-    where loop conn = receive conn >>= print >> loop conn
+    where loop conn = input conn >>= print >> loop conn
 
 -- Data model for a very simple chat system
 data Message = Message {

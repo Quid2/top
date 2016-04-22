@@ -29,7 +29,8 @@ data Content =
              -- A system to track users that are following the current subject
              | Join
              | Leave
-             | AskUsers      -- Ask for list of users 
+             | Ping          -- Signal that we are still connected
+             | AskUsers      -- Ask for list of users
              | Users [User]  -- Return list of users
 
              -- Retrieve recent messages

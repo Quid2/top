@@ -8,22 +8,15 @@ TODOs:
 module Main where
 
 import           Chat.Model
+import           Chat.Util
 import           Control.Concurrent.Async
 import           Control.Monad
 import           Control.Monad.Trans.State
-import           Data.List
-import           Data.Maybe
 import           Data.Pattern
-import           Network.Quid2
-import           Pipes                     (Consumer')
+import           Network.Quid2             hiding (cat)
+import           Pipes                     (cat, for)
 import           Pipes.Prelude             (stdinLn)
 import           System.Environment
-
-type ChatM = StateT ChatState IO
-
-data ChatState = ChatState {
-  shownHistory::Bool -- Have we already shown history (previous messages)? This is set to false after the initial display to avoid redoing it again.
-  }
 
 -- Program parameters: <Input> <Output> <Debug>
 -- To avoid problems with user input and message mixing up in the terminal,
@@ -34,11 +27,14 @@ data Mode = Input
           | Debug
           deriving (Eq,Read,Show)
 
+-- Save the model
+u = recordType def (Proxy::Proxy Message)
+
 t = main
 
 main = do
   -- The subject of the discussion
-  let subjL = ["quid2","haskell-api"]
+  let subjL = ["Haskell"]
   let subj = Subject subjL
 
   putStrLn $ unwords ["Current Subject:",prettySubject (Subject []) subj,"\n"]
@@ -67,7 +63,7 @@ main = do
      outputMode subj = runClient def ByType $ \conn ->
        -- Asynchronously, receive messages and display them
        -- We use a simple pipe, to get a message from the connection (pipeIn) and print it
-       void $ execStateT (runEffect $ pipeIn conn >-> printMessage subj) (ChatState False)
+        void $ execStateT (runEffect $ pipeIn conn >-> niceMessage subj >-> for cat (liftIO . putStrLn)) (ChatState False)
 
      inputMode subj = runClient def ByType $ \conn -> do
        userName <- getName
@@ -81,7 +77,7 @@ main = do
        let msg = Message userName subj
        -- We can use two different systems to exchange messages:
        -- Either we use send/receive, as in:
-       let sendOne = send conn . msg
+       let sendOne = void . output conn . msg
        -- Or we use pipes with pipeIn/pipeOut (see the beautiful Pipes package for more info: http://hackage.haskell.org/package/pipes) as in:
        -- let sendOne c = runEffect $ yield (msg c) >-> pipeOut conn
 
@@ -103,43 +99,4 @@ main = do
        if (length userName < 1)
          then getName
          else return userName
-
--- Print all messages, relative to the current subject or one of its sub-subjects
-printMessage :: Subject -> Consumer' Message ChatM ()
-printMessage subj = loop
-  where
-    loop = do
-        msg <- await
-        when (inSubject subj $ subject msg) $ do
-          mmsg <- lift $ prettyMsg subj msg
-             --case prettyMsg subj msg of
-          case mmsg of
-             Just pr -> liftIO $ putStrLn pr
-             Nothing -> return ()
-        loop
-
-prettyMsg :: Subject -> Message -> ChatM (Maybe [Prelude.Char])
-prettyMsg topSubj msg =
-  let header = return . Just . (concat [prettySubject topSubj (subject msg),fromUser msg++": "] ++)
-  in case content msg of
-    TextMessage txt -> header txt
-    Join ->  header "I just joined the discussion."
-    Leave -> header "I just left the discussion."
-    History msgs -> do
-      shown <- state (\s -> (shownHistory s,ChatState True))
-      if shown
-        then return Nothing
-        else Just . unlines . catMaybes <$> (mapM (prettyMsg topSubj) . reverse $ msgs)
-    _ -> return Nothing
-
-prettySubject :: Subject -> Subject -> [Prelude.Char]
-prettySubject (Subject topSubj) (Subject subj) =
-  let s = fromMaybe subj $ stripPrefix topSubj subj
-  in if null s
-     then ""
-     else concat ["(",intercalate "/" s,") "]
-
-inSubject :: Subject -> Subject -> Bool
-inSubject (Subject topSubj) (Subject subj) = topSubj `isPrefixOf` subj
-
 

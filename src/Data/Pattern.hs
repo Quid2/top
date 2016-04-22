@@ -10,7 +10,7 @@ module Data.Pattern(
 import qualified Data.BitVector              as V
 import           Data.Foldable               (toList)
 import           Data.List                   (intercalate)
-import           Data.Typed                  hiding (Con, Var)
+import           Data.Typed                  hiding (Con, Var,Val)
 -- import           Language.Haskell.Meta.Parse haskell-src-meta,
 import           Language.Haskell.TH
 import           Language.Haskell.TH.Syntax
@@ -20,7 +20,7 @@ data Pattern v =
   -- |A constructor
   Con
   String       -- ^Name of the constructor (e.g. "True")
-  [Pattern v]  -- ^Patterns for the
+  [Pattern v]  -- ^Patterns for the parameters
 
   | Var v      -- A variable
 

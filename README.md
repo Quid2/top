@@ -48,40 +48,7 @@ TERMS OF SERVICE:
 
 ### Usage
 
-The communication model of quid2-net is extremely simple:
-* For every serialisable data type there is a corresponding channel.
-* Anyone can send and receive data values of the appropriate type on any channel.
-
-It's essentially a minimalist content addressable network.
-
-quid2-net does not provide any other service beyond full-duplex typed communication, any other service (e.g. identification or encryption) has to be provided by the clients themselves.
-
-Channel could in principle be implemented using different network protocols, currently they are based on [websockets](   https://en.wikipedia.org/wiki/WebSocket), so they are full-duplex, HTTP compatible, TCP connections.
-
-Currently the quid2-net API is available only for the [Haskell](http://www.haskell.org) language.
-
-APIs for other programming languages are planned (JavaScript is next).
-
-Using the Haskell API is straightforward:
-
-* define a data model, that's just one or more serialisable Haskell data types 
-* automatically derive instances of the *Flat* (serialisation) and *Model* (introspection) classes
-* connect to one or more typed channels and send/receive values and get in communication with any other client using the same types
-
-#### Documentation and Examples
-
-Have a look at some examples of clients/bots:
-* [`hello`](app/hello.hs)
-   * Simplest possible self-contained agent
-* [`chat-history`](app/Chat/chat-history.hs)
-   * A simple bot that will store all messages conforming to a simple chat data model and will send them back on request 
-* [`chat`](app/Chat/chat.hs)
-   * Basic end-user client
-
-Read the API, in particular:
-* [Network.Quid2.Run](src/Network/Quid2/Run.hs)
-* [Network.Quid2.Pipes](src/Network/Quid2/Pipes.hs)  
-* [Network.Quid2.Types](src/Network/Quid2/Types.hs)  
+Sounds interesting? Check the [tutorial](tutorial.md).
 
 ### Installation
 

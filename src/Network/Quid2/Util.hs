@@ -3,53 +3,66 @@
 {-# LANGUAGE ScopedTypeVariables       #-}
 
 module Network.Quid2.Util(
-  runWSClient,protocol,sendMsg,receiveMsg
-  ,dbg,warn,info,err,dbgS,logLevel
-  ,liftIO,forever,when,unless,try,SomeException,threadDelay,seconds
+  dbg,warn,info,err,dbgS,logLevel,logLevelOut
+  ,eitherToMaybe,isRight
+  ,liftIO,forever,when,unless,try,tryE,forceE,SomeException
+  ,async,cancel
+  ,threadDelay,milliseconds,seconds,minutes
   ,module X
   ) where
 
-import           Control.Concurrent
-import           Control.Exception      (SomeException, fromException, handle,
-                                         try)
+import           Control.Concurrent        (threadDelay)
+import           Control.Concurrent.Async  (async, cancel)
+import           Control.Exception         (SomeException, try)
 import           Control.Monad
 import           Control.Monad.IO.Class
-import qualified Data.ByteString.Lazy   as L
-import           Network.Quid2.Types
-import qualified Network.WebSockets     as WS
-import           System.Log.Logger      as X
-
--- |Run a WebSockets connection
--- Automatically close sockets on App exit
-runWSClient :: Config -> WS.ClientApp a -> IO a
-runWSClient cfg app = do
-     WS.runClientWith (ip cfg) (port cfg) (path cfg) opts [("Sec-WebSocket-Protocol", "quid2.net")] $ \conn -> do
-       WS.forkPingThread conn 20 -- Keep connection alive avoiding timeouts
-       app conn
-       --WS.sendClose conn (1000::Int)
-   where
-     opts = WS.defaultConnectionOptions -- { WS.connectionOnPong = dbgS "gotPong"}
-
--- |Setup a connection by sending a value specifying the routing protocol to be used
-protocol :: (Model (router a), Flat (router a)) => Connection a -> router a -> IO ()
-protocol (Connection conn) =  WS.sendBinaryData conn . flat . typedBytes
-
--- |Send a raw binary message on a WebSocket (untyped) connection
-sendMsg :: WS.Connection -> L.ByteString -> IO ()
-sendMsg = WS.sendBinaryData
-
--- |Receive a raw binary message from a WebSocket (untyped) connection
-receiveMsg :: WS.Connection -> IO L.ByteString
-receiveMsg conn = WS.receiveData conn
+import           GHC.IO.Handle             (Handle)
+import           System.Log.Handler.Simple (verboseStreamHandler)
+import           System.Log.Logger         as X
 
 -- |Setup the global logging level
+logLevel :: Priority -> IO ()
 logLevel = updateGlobalLogger rootLoggerName . setLevel
 
+logLevelOut :: Priority -> Handle -> IO ()
+logLevelOut level handle = do
+  out <- verboseStreamHandler handle level
+  updateGlobalLogger rootLoggerName (setHandlers [out] . setLevel level)
+
+forceE = either error id -- throwIO
+
+tryE :: IO a -> IO (Either SomeException a)
+tryE = try
+
+eitherToMaybe :: Either t a -> Maybe a
+eitherToMaybe (Right a) = Just a
+eitherToMaybe (Left _) = Nothing
+
+isRight :: Either t t1 -> Bool
+isRight (Right _) = True
+isRight _ = False
+
+minutes :: Num c => c -> c
+minutes = seconds . (60*)
+
+seconds :: Num a => a -> a
 seconds = (* 1000000)
 
+milliseconds :: Num a => a -> a
+milliseconds = (* 1000)
+
 -- |Utilities for logging
+dbgS :: String -> IO ()
 dbgS = debugM "quid2-net"
+
+dbg :: MonadIO m => [String] -> m ()
 dbg = liftIO . dbgS . unwords
+
+err :: MonadIO m => [String] -> m ()
 err = liftIO . errorM "quid2-net" . unwords
+
+warn :: MonadIO m => [String] -> m ()
 warn = liftIO . warningM "quid2-net" . unwords
+
+info :: MonadIO m => [String] -> m ()
 info = liftIO . infoM "quid2-net" . unwords

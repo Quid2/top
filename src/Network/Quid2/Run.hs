@@ -1,19 +1,22 @@
-{-# LANGUAGE ScopedTypeVariables       #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 module Network.Quid2.Run(
-  runClient,runClientForever,send,receive
+  runClient,runClientForever
+            --,send,receive
   ) where
 
+import qualified Data.ByteString.Lazy     as L
 import           Data.Flat
 import           Data.Typed
 import           Network.Quid2.Types
 import           Network.Quid2.Util
+import           Network.Quid2.WebSockets
 
 -- |Permanently connect an application to a typed channel.
--- |Restart in case of network or application failure.
-runClientForever :: (Model (router a), Flat (router a),Show (router a)) => Config -> router a -> App a r -> IO ()
+-- |Restart client in case of network or application failure.
+-- |BUG: no way to preserve client's state
+runClientForever :: (Model (router a), Flat (router a),Show (router a),Flat a,Show a) => Config -> router a -> App a r -> IO ()
 runClientForever cfg router app = forever $ do
       Left (ex :: SomeException) <- try $ runClient cfg router $ \conn -> do
-
         liftIO $ dbgS "connected"
         app conn
 
@@ -21,26 +24,41 @@ runClientForever cfg router app = forever $ do
       dbg ["Exited loop with error",concat ["'",show ex,"'"],"retrying in a bit."]
       threadDelay $ seconds 5
 
- -- |Connect an application to a typed channel.
-runClient :: (Model (router a), Flat (router a),Show (router a)) => Config -> router a -> App a r -> IO r
-runClient cfg router app = runWSClient cfg (\c -> let conn = Connection c
-                                                  in do
-                                               --print router
-                                               -- print $ typedBytes router
-                                               -- print $ flat $ typedBytes router
-                                               protocol conn router
-                                               app conn)
+-- |Connect an application to a typed channel.
+runClient :: (Model (router a), Flat (router a),Show (router a),Flat a,Show a) => Config -> router a -> App a r -> IO r
+runClient cfg router app
+  = runWSClient cfg (\conn ->
+                      do
+                        dbgS "[Protocol"
+                        protocol conn router
+                        dbgS "Protocol]"
+                        app $ Connection (receive conn) (send conn) (close conn))
 
--- |Send a value on a typed connection
-send :: (Show a,Flat a) => Connection a -> a -> IO ()
-send (Connection conn) v = do
-   sendMsg conn $ flat v
-   dbg ["sent",show v]
+  where
+    -- |Send a value on a typed connection
+    send :: (Show a,Flat a) => WSConnection -> a -> IO ()
+    send conn v = do
+      let e = flat v
+      output conn e
+      dbg ["sent",show v,"as",show $ L.unpack e]
 
--- |Receive a value from a typed connection
-receive :: (Show a, Flat a) => Connection a -> IO a
-receive (Connection conn) = do
-    Right v <- unflat <$> receiveMsg conn
-    dbg ["received",show v]
-    return v
+    -- |Receive a value from a typed connection
+    -- receive :: Flat a => WSConnection -> IO (Maybe a)
+    -- receive conn = do
+    --   mbs <- input conn
+    --   return $ case mbs of
+    --     Nothing -> Nothing
+    --     Just bs -> eitherToMaybe $ unflat bs
+    receive :: (Show a,Flat a) => WSConnection -> IO a
+    receive conn = do
+      e <- input conn
+      let es = show $ L.unpack e
+      case unflat e of
+        Left err -> dbg ["received wrong data",es] >> error "received wrong data"
+        Right v -> dbg ["received",show v,"as",es] >> return v
+
+    -- |Setup a connection by sending a value specifying the routing protocol to be used
+    -- protocol :: (Model (router a), Flat (router a)) => Connection a -> router a -> IO Bool
+    -- protocol (Connection conn) =  output conn . flat . typedBytes
+    protocol conn =  send conn . typedBytes
 

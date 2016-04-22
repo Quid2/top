@@ -5,24 +5,42 @@ module Network.Quid2.Pipes(
   ,pipeIn,pipeOut
   ) where
 
-import Network.Quid2.Types
-import Network.Quid2.Run
-import Pipes
+import           Control.Monad
+import           Network.Quid2.Run
+import           Network.Quid2.Types
+import           Pipes
 
--- |Produce values from a typed connection
+-- |Receive values from a typed connection, terminate when connection is closed
 pipeIn :: (Show a, MonadIO m,Flat a) => Connection a -> Producer a m ()
-pipeIn conn = loop
-     where
-       loop = do
-         v <- liftIO $ receive conn
-         yield v
-         loop
+-- pipeIn conn = loop
+--      where
+--        loop = do
+--          mv <- liftIO $ input conn
+--          case mv of
+--            Nothing -> return ()
+--            Just v -> do
+--              yield v
+--              loop
 
--- |Consume values into a typed connection
+-- |Send values on a typed connection, terminate when connection is closed
 pipeOut :: (Show a, MonadIO m,Flat a) => Connection a -> Consumer a m ()
+-- pipeOut conn = loop
+--      where
+--        loop = do
+--          v <- await
+--          alive <- liftIO $ output conn v
+--          when alive loop
+
+pipeIn conn = loop
+       where
+         loop = do
+           v <- liftIO $ input conn
+           yield v
+           loop
+
 pipeOut conn = loop
-     where
-       loop = do
-         v <- await
-         liftIO $ send conn v
-         loop
+  where
+    loop = do
+      v <- await
+      liftIO $ output conn v
+      loop
