@@ -9,7 +9,7 @@ module Network.Quid2.Types(
   ,def
   ,ByType(..)
   ,Echo(..)
-  ,ByPattern(..)
+  ,ByPattern(..),L.ByteString
 --  ,module Data.Pattern
   ) where
 

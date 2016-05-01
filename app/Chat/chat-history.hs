@@ -35,11 +35,11 @@ main = do
           -- On request, send a list of recent messages
           AskHistory -> do
             msgs <- lift $ getMsgsBySubject (subject msg)
-            yield $ Message userName (subject msg) (History msgs)
+            yield $ Message me (subject msg) (History msgs)
           _ -> return ()
        historyAgent
 
-     userName = "hchat-history"
+     me = User "hchat-history"
 
      addMsg msg = modify (msg:)
      getMsgsBySubject subj = gets (take 50 . filter (\msg -> subject msg == subj))

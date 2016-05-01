@@ -7,17 +7,17 @@ import  Data.Typed
 -- Data model for a simple chat system
 data Message = Message {fromUser::User
                        ,subject::Subject
-                       ,content::Content}
+                       ,content::Content User Message}
              deriving (Eq, Ord, Read, Show, Generic)
 
-type User = String
+data User = User {userName::String} deriving (Eq, Ord, Read, Show, Generic)
 
 -- Hierarchical subject
 -- Example: Subject ["Haskell","Meeting","Firenze"]
 data Subject = Subject [String] deriving (Eq, Ord, Read, Show, Generic)
 
 -- Different kinds of contents
-data Content =
+data Content user message =
              -- Basic text message
              TextMessage String
 
@@ -31,15 +31,15 @@ data Content =
              | Leave
              | Ping          -- Signal that we are still connected
              | AskUsers      -- Ask for list of users
-             | Users [User]  -- Return list of users
+             | Users [user]  -- Return list of users
 
              -- Retrieve recent messages
              | AskHistory         -- Ask
-             | History [Message]  -- Return last messages
+             | History [message]  -- Return last messages
 
              -- Haskell queries
-             | HaskellSearch String
-             | HaskellExpression String
+             -- | HaskellSearch String
+             -- | HaskellExpression String
 
              -- and so on ...
 
@@ -49,11 +49,13 @@ data Content =
 -- and Model (so that their structure can be picked up by the system)
 -- both instances are derived automatically provided that our data type derive Generic
 instance Flat Message
+instance Flat User
 instance Flat Subject
-instance Flat Content
+instance (Flat a, Flat b) => Flat (Content a b)
 
 instance Model Message
+instance Model User
 instance Model Subject
-instance Model Content
+instance (Model a,Model b) => Model (Content a b)
 
 

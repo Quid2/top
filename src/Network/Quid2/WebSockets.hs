@@ -7,6 +7,7 @@
  #-}
 module Network.Quid2.WebSockets(
   runWSClient--,sendMsg,receiveMsg
+  ,protocol
   ) where
 
 import qualified Data.ByteString     as B
@@ -280,3 +281,9 @@ runWSClient cfg app =
 
 #endif
 
+-- |Setup a connection by sending a value specifying the routing protocol to be used
+-- protocol :: (Model (router a), Flat (router a)) => Connection a -> router a -> IO Bool
+-- protocol conn =  send conn . typedBytes
+protocol conn router = do
+  dbg ["protocol",show router]
+  output conn . flat . typedBytes $ router

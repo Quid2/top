@@ -57,8 +57,4 @@ runClient cfg router app
         Left err -> dbg ["received wrong data",es] >> error "received wrong data"
         Right v -> dbg ["received",show v,"as",es] >> return v
 
-    -- |Setup a connection by sending a value specifying the routing protocol to be used
-    -- protocol :: (Model (router a), Flat (router a)) => Connection a -> router a -> IO Bool
-    -- protocol (Connection conn) =  output conn . flat . typedBytes
-    protocol conn =  send conn . typedBytes
 

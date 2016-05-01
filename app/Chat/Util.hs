@@ -27,7 +27,7 @@ niceMessage subj = loop
 
 prettyMsg :: Subject -> Message -> ChatM (Maybe String)
 prettyMsg topSubj msg =
-  let header = return . Just . (concat [prettySubject topSubj (subject msg),fromUser msg++": "] ++)
+  let header = return . Just . (concat [prettySubject topSubj (subject msg),userName (fromUser msg) ++": "] ++)
   in case content msg of
     TextMessage txt -> header txt
     Join ->  header "I just joined the discussion."

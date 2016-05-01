@@ -66,7 +66,7 @@ main = do
         void $ execStateT (runEffect $ pipeIn conn >-> niceMessage subj >-> for cat (liftIO . putStrLn)) (ChatState False)
 
      inputMode subj = runClient def ByType $ \conn -> do
-       userName <- getName
+       user <- getName
 
        putStrLn $ unlines [""
                       ,"Help:"
@@ -74,7 +74,7 @@ main = do
                       ,"To exit: Ctrl-D." --,"To exit: enter . (a single full stop)"
                       ]
 
-       let msg = Message userName subj
+       let msg = Message (User user) subj
        -- We can use two different systems to exchange messages:
        -- Either we use send/receive, as in:
        let sendOne = void . output conn . msg
