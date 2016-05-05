@@ -1,6 +1,6 @@
-Haskell API for the quid2-net content-addressable transport protocol.
+An Haskell API for the quid2-net content-addressable transport protocol.
 
-The API is compatible with both ghc and [ghcjs](https://github.com/ghcjs/ghcjs) so it can be used to develop both stand alone and WWW applications.
+The API is compatible with both [ghc](https://www.haskell.org/ghc/) (tested with 7.10.3) and [ghcjs](https://github.com/ghcjs/ghcjs) so it can be used to develop both stand alone and WWW applications.
 
 ### quid2-net
 
