@@ -1,6 +1,6 @@
 Haskell API for the quid2-net content-addressable transport protocol.
 
-The API is compatible with both ghc and ghcjs so it can be used to develop both stand alone and WWW applications.
+The API is compatible with both ghc and [ghcjs](https://github.com/ghcjs/ghcjs) so it can be used to develop both stand alone and WWW applications.
 
 ### quid2-net
 
@@ -8,7 +8,7 @@ quid2-net is a *simple*, *accurate* and *free* messaging service.
 
 #### Simple
 
-Using quid2-net can be as [simple](app/hello.hs) as:
+Using quid2-net can be as simple as:
 
 ```haskell
 {-# LANGUAGE DeriveGeneric #-}
@@ -51,7 +51,7 @@ TERMS OF SERVICE:
 * By using quid2-net you accept that the service is offered "as is" with no express or implied warranty for availability, performance, consistency, longevity or functionality.
 
 ### Usage
-Sounds interesting? Check some [example applications](https://github.com/tittoassini/quid2-net-apps).
+Sounds interesting? Check some [stand-alone](https://github.com/tittoassini/quid2-net-apps) and [WWW ](https://github.com/tittoassini/quid2-net-apps-ghcjs) applications.
 
 ### Downtime
 quid2-net might be down for upgrades every Monday between 7 and 8 am (UTC+1 [DST](https://en.wikipedia.org/wiki/Daylight_saving_time)).
