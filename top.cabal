@@ -1,8 +1,8 @@
-name:                quid2-net
+name:                top
 version:             0.1.0.0
-synopsis:            API for quid2.net, the typed messaging service.
+synopsis:            API for top, the typed oriented protocol.
 description:         Please see README.md
-homepage:            http://github.com/tittoassini/quid2-net
+homepage:            http://github.com/tittoassini/top
 license:             BSD3
 license-file:        LICENSE
 author:              Pasqualino `Titto` Assini
@@ -21,15 +21,14 @@ library
     build-depends:     ghcjs-base        >= 0.2 && < 0.3
   default-language:    Haskell2010
 
-test-suite quid2-net-test
+test-suite top-test
   type:                exitcode-stdio-1.0
   hs-source-dirs:      test
   main-is:             Spec.hs
-  build-depends:       base,typed,hslogger,bytestring,websockets,async >= 2.1.0,stm
-                       ,quid2-net
+  build-depends:       base,typed,hslogger,bytestring,websockets,async >= 2.1.0,stm,top
   ghc-options:         -threaded -rtsopts -with-rtsopts=-N
   default-language:    Haskell2010
 
 source-repository head
   type:     git
-  location: https://github.com/tittoassini/quid2-net
+  location: https://github.com/tittoassini/top
