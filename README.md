@@ -1,16 +1,16 @@
-Imaging visiting your favourite open shelf library or bookshop and discovering that overnight some ill-advised employee has reordered the whole collection by publishing house. All books from Oxford University Press or Penguin are now neatly grouped together.
+Imagine visiting your favourite open shelf library or bookshop and discovering that overnight some ill-advised employee has reordered the whole collection by publishing house. All books from Oxford University Press or Penguin are now neatly grouped together.
 
 That would look nice and orderly for sure, with all those similarly designed book spines standing side by side.
 
 But obviously, this semblance of order would be nothing but a travesty as it would be close to impossible to locate what you are really after, and that's usually not "some book from Penguin" but rather a book about Thai cooking or the latest novel by Mo Yan.
 
-Wake up, it was just a nightmare. Nobody would be so stupid to order human knowledge in such a non-sensical way, would they?
+Wake up, it was just a nightmare. Nobody would be so stupid to order human knowledge in such a nonsensical way, would they?
 
-Except, now that you make me think about it, this is exactly how information is ordered by default in the ultimate library, the Internet. In the WWW, for example, information is accessed by web site, and a web site is nothing but a collection of information made available from some publisher. And that, unsurprisingly, causes a bit of trouble when you are actually looking for some specific type of information.
+Except, now that you make me think about it, this is exactly how information is ordered by default in the ultimate library, the Internet. On the World Wide Web, for example, information is accessed by Web site, and a Web site is nothing but a collection of information made available from some publisher. And that, unsurprisingly, causes a bit of trouble when you are actually looking for some specific type of information.
 
 Someone had to fix the problem, patiently reorganising the Internet library by type and subject, and in fact [someone](http://google.com) did and, as reward for their efforts, even managed to make a [little dough](http://finance.yahoo.com/q?s=GOOG) out of it. Who said that being a good librarian doesn't pay the bills?
 
-The root of the problem is the way information is accessed and transferred on the Internet. The protocol at the heart of the Web, the [HTTP](https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol),as in fact those used by most widely used Internet systems, is a point-to-point protocol.
+The root of the problem is the way information is accessed and transferred on the Internet. The communication protocol at the heart of the Web, the [HTTP](https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol),as in fact those used by most widely used Internet systems, is a point-to-point protocol.
 
 Point to point simply means that information flows from A to B where A and B are publishers and/or consumers of information. It is the simplest but not always the more convenient form of communication as it's often the case that A does not in fact want to communicate with B at all, but would rather talk about *something* or exchange some specific *type* of information.
 
