@@ -6,13 +6,13 @@ But obviously, this semblance of order would be nothing but a travesty as it wou
 
 Wake up, it was just a nightmare. Nobody would be so stupid to order human knowledge in such a nonsensical way, would they?
 
-Except, now that you make me think about it, this is exactly how information is ordered by default in the ultimate library, the Internet. On the World Wide Web, for example, information is accessed by Web site, and a Web site is nothing but a collection of information made available from some publisher. And that, unsurprisingly, causes a bit of trouble when you are actually looking for some specific type of information.
+Except, now that you make me think about it, this is exactly how information is ordered by default in the ultimate library, the Internet. On the World Wide Web, for example, information is accessed by website, and a website is nothing but a collection of information made available from some publisher. And that, unsurprisingly, causes a bit of trouble when you are actually looking for some specific type of information.
 
 Someone had to fix the problem, patiently reorganising the Internet library by type and subject, and in fact [someone](http://google.com) did and, as reward for their efforts, even managed to make a [little dough](http://finance.yahoo.com/q?s=GOOG) out of it. Who said that being a good librarian doesn't pay the bills?
 
-The root of the problem is the way information is accessed and transferred on the Internet. The communication protocol at the heart of the Web, the [HTTP](https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol),as in fact those used by most widely used Internet systems, is a point-to-point protocol.
+The root of the problem is the way information is accessed and transferred on the Internet. The communication protocol at the heart of the Web, the [HTTP](https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol), as in fact those of most widely used Internet systems, is a point-to-point protocol.
 
-Point to point simply means that information flows from A to B where A and B are publishers and/or consumers of information. It is the simplest but not always the more convenient form of communication as it's often the case that A does not in fact want to communicate with B at all, but would rather talk about *something* or exchange some specific *type* of information.
+Point-to-point simply means that information flows from A to B where A and B are publishers and/or consumers of information. It is the simplest but not always the most convenient form of communication as it's often the case that A does not in fact want to communicate with B at all, but would rather talk about *something* or exchange some specific *type* of information.
 
 Say for example that you have some excellent jokes that you would be willing to share with the world. You don't want to call Joe and then Jake and then Marian to make them laugh. You want to make people, not a specific person, laugh. Now say that you could simply define what a joke is and then start sending them out and that anyone interested could tune in and have a good time reading them and sending out their own.
 
@@ -37,7 +37,7 @@ Well maybe you don't think so, but that's not a problem, you are free to send ou
 
 Because what we have just done, by the simple act of defining some type of information and sending out an item of that type, is to create a big fat global channel where jokes of all kinds can now flow. 
 
-And that's precisely how top, the type oriented protocol works.
+And that's precisely how Top, the type oriented protocol works.
 
 
 ### Top (Type Oriented Protocol)
@@ -48,8 +48,7 @@ In Top, data does not flow from A to B but rather all data of the same type flow
 
 Briefly:
 * For every data type there is a corresponding channel
-* A channels transfer only data values of its associate type
-* Anyone can send and receive data values
+* Anyone can define new data types and send and receive data values
 
 You can [see it in action](http://quid2.org/app/ui). 
 
@@ -59,7 +58,7 @@ Definitions are just plain algebraic data types (with a couple of restrictions: 
 
 For example, you should see a *Message* channel that is used to implement a simple chat system. Click on *Show Values* to inspect the value being transferred and then use the [chat user interface](http://quid2.org/app/chat) to login and send a couple of messages and see them appear on the channel.
 
-Under the *Types* tab, is the list of types known to the system.
+Under the *Types* tab is the list of types known to the system.
 
 #### Minimalist and Evolvable
 
@@ -84,7 +83,7 @@ APIs for other programming languages are planned and help would be greatly appre
 Install Quid2 as specified below and then look at [quid2-net-apps](https://github.com/tittoassini/quid2-net-apps) and [quid2-net-apps-ghcjs](https://github.com/tittoassini/quid2-net-apps-ghcjs) for examples of how to develop stand-alone and www applications.
 
 
-quid2-net is a *simple*, *accurate* and *free* messaging service.
+Top is a *simple*, *accurate* and *free* messaging service.
 
 #### Simple
 
