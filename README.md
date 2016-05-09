@@ -19,10 +19,10 @@ Say for example that you have some excellent jokes that you would be willing to 
 We might define a joke, in a very simple way, as:
 
 ```haskell
-data Joke = Joke String
+data Joke = Joke Text
 ````
 
-that basically means: 'a joke is just a string marked as being a joke'.
+that basically means: 'a joke is just a text marked as being a joke'.
 
 And then we could simply start sending out jokes by writing a little program that says:
 
