@@ -4,7 +4,47 @@ The API is compatible with both [ghc](https://www.haskell.org/ghc/) (tested with
 
 ### Top (type oriented protocol), a minimalist content-oriented transport protocol
 
-Most widely used Internet transport protocols are point-to-point, think [TCP](https://en.wikipedia.org/wiki/Transmission_Control_Protocol) or [HTTP](https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol). 
+Imaging visiting your favourite open shelf library or bookshop and discovering that overnight some ill-advised employee has reordered the whole collection by publishing house. All books from Oxford University Press or Penguin are now neatly grouped together.
+
+That would look nice and orderly for sure, with all those similarly designed book spines standing side by side.
+
+But obviously, this semblance of order would be nothing but a travesty as it would be close to impossible to locate what you are really after, and that's usually not "some book from Penguin" but rather a book about Thai cooking or the latest novel by Mo Yan.
+
+Wake up, it was just a nightmare. Nobody would be so stupid to order human knowledge in such a non-sensical way, would they? 
+Except, now that you make me think about it, this is exactly how information is ordered by default in the ultimate library, the Internet. In the WWW, for example, information is accessed by web site, and a web site is nothing but a collection of information made available from some publisher. And that, unsurprisingly, causes a bit of trouble when you are actually looking for some specific type of information.
+
+Someone had to fix the problem, patiently reorganising the Internet library by type and subject, and in fact [someone](http://google.com) did and, as reward for their efforts, even managed to make a [little dough](http://finance.yahoo.com/q?s=GOOG) out of it. Who said that being a good librarian doesn't pay the bills?
+
+The root of the problem is in the way information is accessed and transferred on the Internet. The protocol at the heart of the Web, the [HTTP](https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol), is based, as most widely used Internet systems, on [TCP](https://en.wikipedia.org/wiki/Transmission_Control_Protocol), a point-to-point protocol.
+
+Point to point simply means that information flows from A to B where A and B are publishers and/or consumers of information. It is the simplest but not always the more convenient form of communication as it's often the case that A does not in fact want to communicate with B at all, but would rather talk about something or exchange some specific kind of information.
+
+Say for example that you have some excellent jokes that you would be willing to share with the world. You don't want to call Joe and then Jake and then Marian to make them laugh. You want to make people, not a specific person, laugh. Now say that you could simply define what a joke is and then start sending them out and that anyone interested could tune in and have a good time reading them and sending out their own.
+
+We might define a joke, in a very simple way, as:
+
+```
+data Joke = Joke String
+````
+
+that basically means: 'a joke is just a string marked as being a joke'.
+
+And then we could simply start sending out jokes by writing a little program that says:
+
+```
+jokesChannel <- openChannel Joke 
+
+send jokesChannel (Joke "How is Donald Trump going to shut down the Department of Education? By renaming it Trump University.")
+```
+Funny eh :-)? 
+
+Well maybe you don't think so, but that's not a problem, you are free to send out your own jokes.
+
+Because what we have just done, by the simple act of defining some type of information and sending out an item of that type, is to create a big fat global channel where jokes of all kinds can now flow. 
+
+And that's precisely how top, the type oriented protocol works.
+
+
 
 top is, on the contrary, a content-oriented protocol.
 
