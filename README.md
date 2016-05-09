@@ -70,11 +70,7 @@ The API is compatible with both [ghc](https://www.haskell.org/ghc/) (tested with
 
 APIs for other programming languages are planned and help in developing them would be greatly appreciated.
 
-#### Installation
-
-Currently top is installed as part of the [quid2](https://github.com/tittoassini/quid2) project.
-
-#### Using the Top Haskell API
+#### Usage
 
 Using Top can be as simple as:
 
@@ -112,6 +108,10 @@ For examples of stand-alone and www applications see:
   * Example WWW applications for [top](https://github.com/tittoassini/top), using [ghcjs](https://github.com/ghcjs/ghcjs).
 * [top-apps](https://github.com/tittoassini/top-apps)
   * Example applications for [top](https://github.com/tittoassini/top).
+
+#### Installation
+
+Currently must be installed as part of the [quid2](https://github.com/tittoassini/quid2) project.
 
 ### The Top Service.
 
