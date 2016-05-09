@@ -2,13 +2,11 @@ An Haskell API for the quid2-net content-addressable transport protocol.
 
 The API is compatible with both [ghc](https://www.haskell.org/ghc/) (tested with 7.10.3) and [ghcjs](https://github.com/ghcjs/ghcjs) so it can be used to develop both stand alone and WWW applications.
 
-### quid2-net
-
-### Quid2-Net, a minimalist content-oriented transport protocol
+### Top (type oriented protocol), a minimalist content-oriented transport protocol
 
 Most widely used Internet transport protocols are point-to-point, think [TCP](https://en.wikipedia.org/wiki/Transmission_Control_Protocol) or [HTTP](https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol). 
 
-quid2-net is, on the contrary, a content-oriented protocol.
+top is, on the contrary, a content-oriented protocol.
 
 Data does not flow from A to B but rather all data of the same type flows on a single, globally unique, channel.
 
