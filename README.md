@@ -18,7 +18,7 @@ Say for example that you have some excellent jokes that you would be willing to 
 
 We might define a joke, in a very simple way, as:
 
-```
+```haskell
 data Joke = Joke String
 ````
 
@@ -26,7 +26,7 @@ that basically means: 'a joke is just a string marked as being a joke'.
 
 And then we could simply start sending out jokes by writing a little program that says:
 
-```
+```haskell
 jokesChannel <- openChannel Joke 
 
 send jokesChannel (Joke "Notice on an Italian bus: don’t talk to the driver, he needs his hands.")
@@ -37,57 +37,46 @@ Well maybe you don't think so, but that's not a problem, you are free to send ou
 
 Because what we have just done, by the simple act of defining some type of information and sending out an item of that type, is to create a big fat global channel where jokes of all kinds can now flow. 
 
-And that's precisely how Top, the type oriented protocol works.
-
+And that's precisely how Top, the type oriented protocol, works.
 
 ### Top (Type Oriented Protocol)
 
 Top is a minimalist content-oriented transport protocol.
 
-In Top, data does not flow from A to B but rather all data of the same type flows on a single, globally unique, channel.
+In Top, all communication takes place on bi-directional *typed* channels, that's to say on channels that transfer only values of a well-defined algebraic data type.
 
-Briefly:
-* For every data type there is a corresponding channel
-* Anyone can define new data types and send and receive data values
+Data does not flow from A to B but rather all data of the same type flows on a single, globally unique, channel and anyone can define new data types and send and receive data values.
 
 You can [see it in action](http://quid2.org/app/ui). 
 
 Under the *Channels* tab are listed the currently open channels, every channel has a type and you can see its full definition by clicking on *Definition*.
 
-Definitions are just plain algebraic data types (with a couple of restrictions: data types definitions cannot be mutually recursive and variables can appear only in kind * positions). 
+Definitions are just plain algebraic data types [1].
 
 For example, you should see a *Message* channel that is used to implement a simple chat system. Click on *Show Values* to inspect the value being transferred and then use the [chat user interface](http://quid2.org/app/chat) to login and send a couple of messages and see them appear on the channel.
 
 Under the *Types* tab is the list of types known to the system.
 
-#### Minimalist and Evolvable
+#### Minimalist but Evolvable
 
 Top does not provide any other service beyond full-duplex typed communication, any other service (e.g. identification or encryption) has to be provided by the clients themselves but that can be done easily and independently by simply creating data types that stands for the additional functionality required.
 
-#### Current Implementation
 
-Though Top is eventually meant to develop into an universal, vendor-free tranport protocol, its current incarnation is provided by a single central router.
-
-Channel could in principle be implemented using different network protocols, currently they are based on [websockets](   https://en.wikipedia.org/wiki/WebSocket), so they are full-duplex, HTTP compatible, TCP connections.
-
-#### APIs
+### Haskell API
 
 This repo provides an Haskell API for Top.
 
 The API is compatible with both [ghc](https://www.haskell.org/ghc/) (tested with 7.10.3) and [ghcjs](https://github.com/ghcjs/ghcjs) so it can be used to develop both stand alone and WWW applications.
 
-APIs for other programming languages are planned and help would be greatly appreciated.
+APIs for other programming languages are planned and help in developing them would be greatly appreciated.
 
-### How Do I Use It?
+#### Installation
 
-Install Quid2 as specified below and then look at [quid2-net-apps](https://github.com/tittoassini/quid2-net-apps) and [quid2-net-apps-ghcjs](https://github.com/tittoassini/quid2-net-apps-ghcjs) for examples of how to develop stand-alone and www applications.
+Currently top is installed as part of the [quid2](https://github.com/tittoassini/quid2) project.
 
+#### Using the Top Haskell API
 
-Top is a *simple*, *accurate* and *free* messaging service.
-
-#### Simple
-
-Using quid2-net can be as simple as:
+Using Top can be as simple as:
 
 ```haskell
 {-# LANGUAGE DeriveGeneric #-}
@@ -117,21 +106,25 @@ instance Model Message
 instance Model Content
 ```
 
-#### Accurate
+For examples of stand-alone and www applications see:
 
-In quid2-net, all communication takes place on bi-directional *typed* channels, that's to say on channels that transfer only values of a well-defined algebraic data type.
+* [top-apps-ghcjs](https://github.com/tittoassini/top-apps-ghcjs)
+  * Example WWW applications for [top](https://github.com/tittoassini/top), using [ghcjs](https://github.com/ghcjs/ghcjs).
+* [top-apps](https://github.com/tittoassini/top-apps)
+  * Example applications for [top](https://github.com/tittoassini/top).
 
-#### Free
+### The Top Service.
 
-TERMS OF SERVICE: 
-* The quid2-net service is offered by Quid2 Limited - Registered in England and Wales - Reg No: 09213600.
-* There is no charge for fair usage of the quid2-net service. 
+Though Top is eventually meant to develop into a distributed, vendor-free, protocol compatible with multiple transport protocols, its current implementation is provided by a single central router that supports [websockets](https://en.wikipedia.org/wiki/WebSocket) and therefore full-duplex, HTTP compatible channels.
+
+TERMS OF SERVICE:
+* The Top service is offered by Quid2 Limited - Registered in England and Wales - Reg No: 09213600.
+* There is no charge for fair usage of the Top service. 
 * Fair usage is defined as any usage that does not lead to a *de facto* denial of service to other users or that imposes unreasonable expense on its maintainer.
-* By using quid2-net you accept that the service is offered "as is" with no express or implied warranty for availability, performance, consistency, longevity or functionality.
+* By using the Top service you accept that the service is offered "as is" with no express or implied warranty for availability, performance, consistency, longevity or functionality.
 
-### Usage
-Sounds interesting? Check some [stand-alone](https://github.com/tittoassini/quid2-net-apps) and [WWW ](https://github.com/tittoassini/quid2-net-apps-ghcjs) applications.
+#### Downtime
+The Top service might be down for upgrades every Monday between 7 and 8 am (UTC+1 [DST](https://en.wikipedia.org/wiki/Daylight_saving_time)).
 
-### Downtime
-quid2-net might be down for upgrades every Monday between 7 and 8 am (UTC+1 [DST](https://en.wikipedia.org/wiki/Daylight_saving_time)).
-
+### Notes
+[1] With a couple of restrictions: data types definitions cannot be mutually recursive and variables can appear only in kind * positions.
