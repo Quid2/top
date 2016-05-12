@@ -68,7 +68,7 @@ This repo provides an Haskell API for Top.
 
 The API is compatible with both [ghc](https://www.haskell.org/ghc/) (tested with 7.10.3) and [ghcjs](https://github.com/ghcjs/ghcjs) so it can be used to develop both stand alone and WWW applications.
 
-APIs for other programming languages are planned and help in developing them would be greatly appreciated.
+Help in developing APIs for other programming languages would be greatly appreciated :-)
 
 #### Usage
 
