@@ -33,7 +33,7 @@ send jokesChannel (Joke "Notice on an Italian bus: don’t talk to the driver, h
 ```
 Funny eh :-)? 
 
-Well maybe you don't think so, but that's not a problem, you are free to send out your own jokes.
+Maybe not, but that's not a problem as you are free to send out your own jokes.
 
 Because what we have just done, by the simple act of defining some type of information and sending out an item of that type, is to create a big fat global channel where jokes of all kinds can now flow. 
 
