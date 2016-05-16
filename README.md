@@ -20,7 +20,7 @@ We might define a joke, in a very simple way, as:
 
 ```haskell
 data Joke = Joke Text
-````
+```
 
 that basically means: 'a joke is just a text marked as being a joke'.
 
