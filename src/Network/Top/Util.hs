@@ -2,7 +2,7 @@
 {-# LANGUAGE OverloadedStrings         #-}
 {-# LANGUAGE ScopedTypeVariables       #-}
 
-module Network.Quid2.Util(
+module Network.Top.Util(
   dbg,warn,info,err,dbgS,logLevel,logLevelOut
   ,eitherToMaybe,isRight
   ,liftIO,forever,when,unless,try,tryE,forceE,SomeException
@@ -53,16 +53,16 @@ milliseconds = (* 1000)
 
 -- |Utilities for logging
 dbgS :: String -> IO ()
-dbgS = debugM "quid2-net"
+dbgS = debugM "top"
 
 dbg :: MonadIO m => [String] -> m ()
 dbg = liftIO . dbgS . unwords
 
 err :: MonadIO m => [String] -> m ()
-err = liftIO . errorM "quid2-net" . unwords
+err = liftIO . errorM "top" . unwords
 
 warn :: MonadIO m => [String] -> m ()
-warn = liftIO . warningM "quid2-net" . unwords
+warn = liftIO . warningM "top" . unwords
 
 info :: MonadIO m => [String] -> m ()
-info = liftIO . infoM "quid2-net" . unwords
+info = liftIO . infoM "top" . unwords

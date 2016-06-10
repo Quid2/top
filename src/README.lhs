@@ -1,4 +1,3 @@
-
 Imagine visiting your favourite open shelf library or bookshop and discovering that overnight some ill-advised employee has reordered the whole collection by publishing house. All books from Oxford University Press or Penguin are now neatly grouped together.
 
 That would look nice and orderly for sure, with all those similarly designed book spines standing side by side.
@@ -40,7 +39,7 @@ Because what we have just done, by the simple act of defining some type of infor
 
 And that's precisely how Top, the type oriented protocol, works.
 
-### Top (Type Oriented Protocol)
+ ### Top (Type Oriented Protocol)
 
 Top is a minimalist content-oriented transport protocol.
 
@@ -58,12 +57,12 @@ For example, you should see a *Message* channel that is used to implement a simp
 
 Under the *Types* tab is the list of types known to the system.
 
-#### Minimalist but Evolvable
+ #### Minimalist but Evolvable
 
 Top does not provide any other service beyond full-duplex typed communication, any other service (e.g. identification or encryption) has to be provided by the clients themselves but that can be done easily and independently by simply creating data types that stands for the additional functionality required.
 
 
-### Haskell API
+ ### Haskell API
 
 This repo provides an Haskell API for Top.
 
@@ -71,39 +70,11 @@ The API is compatible with both [ghc](https://www.haskell.org/ghc/) (tested with
 
 APIs for other programming languages are planned and help in developing them would be greatly appreciated.
 
-#### Usage
+ #### Usage
 
 Using Top can be as simple as:
 
-````haskell
-{-# LANGUAGE DeriveGeneric #-}
-import Network.Top
-
--- |Send a message and then print out all messages received
-main = runClient def ByType $ \conn -> do
-  logLevel DEBUG
-  output conn Message {fromUser="robin",content=TextMessage "Hello!"}
-  loop conn
-    where loop conn = input conn >>= print >> loop conn
-
--- Data model for a very simple chat system
-data Message = Message {
-     fromUser::String
-    ,content::Content
-    } deriving (Eq, Ord, Read, Show, Generic)
-
-data Content =
-    TextMessage String
-
-    | HTMLMessage String
-    deriving (Eq, Ord, Read, Show, Generic)
-
-instance Flat Message
-instance Flat Content
-instance Model Message
-instance Model Content
-````
-[Source Code](https://github.com/tittoassini/top-apps/blob/master/app/hello.hs)
+!source top-apps:app/hello.hs
 
 For examples of stand-alone and www applications see:
 
@@ -112,11 +83,11 @@ For examples of stand-alone and www applications see:
 * [top-apps](https://github.com/tittoassini/top-apps)
   * Example applications for [top](https://github.com/tittoassini/top).
 
-#### Installation
+ #### Installation
 
 Currently must be installed as part of the [quid2](https://github.com/tittoassini/quid2) project.
 
-### The Top Service.
+ ### The Top Service.
 
 Though Top is eventually meant to develop into a distributed, vendor-free, protocol compatible with multiple transport protocols, its current implementation is provided by a single central router that supports [websockets](https://en.wikipedia.org/wiki/WebSocket) and therefore full-duplex, HTTP compatible channels.
 
@@ -126,8 +97,8 @@ TERMS OF SERVICE:
 * Fair usage is defined as any usage that does not lead to a *de facto* denial of service to other users or that imposes unreasonable expense on its maintainer.
 * By using the Top service you accept that the service is offered "as is" with no express or implied warranty for availability, performance, consistency, longevity or functionality.
 
-#### Downtime
+ #### Downtime
 The Top service might be down for upgrades every Monday between 7 and 8 am (UTC+1 [DST](https://en.wikipedia.org/wiki/Daylight_saving_time)).
 
-### Notes
+ ### Notes
 [1] With a couple of restrictions: data types definitions cannot be mutually recursive and variables can appear only in kind * positions.

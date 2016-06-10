@@ -1,12 +1,13 @@
 {-# LANGUAGE ScopedTypeVariables #-}
-module Network.Quid2.Repo(recordType,solveType,knownTypes) where
+module Network.Top.Repo(recordType,solveType,knownTypes) where
 import           Data.Maybe
 import           Data.Typed
-import           Network.Quid2.Run
-import           Network.Quid2.Types
-import           Network.Quid2.Util
+import           Network.Top.Run
+import           Network.Top.Types
+import           Network.Top.Util
 import           Repo.Types
 import           System.Timeout
+import qualified Data.Text as T
 
 t = t1 >> t2
    -- record (Proxy::Proxy Repo)
@@ -20,7 +21,7 @@ t3 = knownTypes def
 recordType :: Model a => Config -> Proxy a -> IO ()
 recordType cfg proxy = runClient cfg ByType $ \conn -> mapM_ (output conn . Record) . absADTs $ proxy
 
-solveType :: Model a => Config -> Proxy a -> IO (Either String [(AbsRef, AbsADT)])
+solveType :: Model a => Config -> Proxy a -> IO (Either T.Text [(AbsRef, AbsADT)])
 solveType cfg proxy = runClient cfg ByType $ \conn -> do
 
     let typ = absType proxy
@@ -32,7 +33,7 @@ solveType cfg proxy = runClient cfg ByType $ \conn -> do
             Solved t r | t == typ -> return r
             _ -> loop
 
-    fromMaybe (Left "Timeout") <$> timeout (seconds 30) loop
+    fromMaybe (Left $ T.pack "Timeout") <$> timeout (seconds 30) loop
 
 knownTypes :: Config -> IO (Either String [(AbsRef, AbsADT)])
 knownTypes cfg = runClient cfg ByType $ \conn -> do

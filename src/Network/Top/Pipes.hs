@@ -1,13 +1,13 @@
 -- Pipes utilities
-module Network.Quid2.Pipes(
+module Network.Top.Pipes(
   --module Pipes
    runEffect,(>->),yield,for,await,lift
   ,pipeIn,pipeOut
   ) where
 
 import           Control.Monad
-import           Network.Quid2.Run
-import           Network.Quid2.Types
+import           Network.Top.Run
+import           Network.Top.Types
 import           Pipes
 
 -- |Receive values from a typed connection, terminate when connection is closed

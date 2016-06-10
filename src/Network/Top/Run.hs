@@ -1,5 +1,5 @@
 {-# LANGUAGE ScopedTypeVariables #-}
-module Network.Quid2.Run(
+module Network.Top.Run(
   runClient,runClientForever
             --,send,receive
   ) where
@@ -7,9 +7,9 @@ module Network.Quid2.Run(
 import qualified Data.ByteString.Lazy     as L
 import           Data.Flat
 import           Data.Typed
-import           Network.Quid2.Types
-import           Network.Quid2.Util
-import           Network.Quid2.WebSockets
+import           Network.Top.Types
+import           Network.Top.Util
+import           Network.Top.WebSockets
 
 -- |Permanently connect an application to a typed channel.
 -- |Restart client in case of network or application failure.

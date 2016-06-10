@@ -14,8 +14,8 @@ cabal-version:       >=1.10
 
 library
   hs-source-dirs:      src
-  exposed-modules:     Data.BitVector,Data.Pattern,Network.Quid2,Network.Quid2.Pipes,Network.Quid2.Repo,Network.Quid2.Types,Network.Quid2.Run,Network.Quid2.Util,Network.Quid2.WebSockets,Repo.Types
-  build-depends:       async, base >= 4.7 && < 5, bytestring, data-default-class, flat, template-haskell, hslogger, pipes, transformers, typed, vector >= 0.11.0.0, websockets,stm,invariant
+  exposed-modules:     Network.Top,Network.Top.Pipes,Network.Top.Repo,Network.Top.Types,Network.Top.Run,Network.Top.Util,Network.Top.WebSockets,Repo.Types
+  build-depends:       async, base >= 4.7 && < 5, bytestring, data-default-class, flat, template-haskell, hslogger, pipes, transformers, typed, text, websockets,stm,invariant
 
   if impl(ghcjs)
     build-depends:     ghcjs-base        >= 0.2 && < 0.3

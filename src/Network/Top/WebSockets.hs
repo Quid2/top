@@ -5,15 +5,15 @@
 {-# LANGUAGE ForeignFunctionInterface, JavaScriptFFI, UnboxedTuples, GHCForeignImportPrim, UnliftedFFITypes,
               MagicHash
  #-}
-module Network.Quid2.WebSockets(
+module Network.Top.WebSockets(
   runWSClient--,sendMsg,receiveMsg
   ,protocol
   ) where
 
 import qualified Data.ByteString     as B
 import qualified Data.ByteString.Lazy     as L
-import           Network.Quid2.Types
-import Network.Quid2.Util
+import           Network.Top.Types
+import Network.Top.Util
 import Control.Exception
 
 #ifdef ghcjs_HOST_OS
@@ -257,7 +257,7 @@ import qualified Network.WebSockets       as WS
 -- Automatically close sockets on App exit
 runWSClient :: Config -> WSApp r -> IO r
 runWSClient cfg app =
-     WS.runClientWith (ip cfg) (port cfg) (path cfg) opts [("Sec-WebSocket-Protocol", "quid2.net")] $ \conn -> do
+     WS.runClientWith (cfgIP cfg) (cfgPort cfg) (cfgPath cfg) opts [("Sec-WebSocket-Protocol", "??")] $ \conn -> do
        -- WS.forkPingThread conn 20 -- Keep connection alive avoiding timeouts (FIX: the server should send pings as this is required by browsers)
        --WS.sendClose conn (1000::Int)
        -- app $ Connection

@@ -2,6 +2,7 @@
 module Repo.Types where
 
 import Data.Typed
+import Data.Text(Text)
 
 data Repo = Record AbsADT
           | Solve AbsType
@@ -10,7 +11,7 @@ data Repo = Record AbsADT
           | KnownDataTypes [(AbsRef,AbsADT)]
           deriving (Eq, Ord, Show, Generic)
 
-type RepoError = String
+type RepoError = Text
 -- data RepoError = UnknownType deriving (Eq, Ord, Show, Generic)
 -- instance Flat RepoError
 -- instance Model RepoError
