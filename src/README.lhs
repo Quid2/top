@@ -33,9 +33,9 @@ send jokesChannel (Joke "Notice on an Italian bus: don’t talk to the driver, h
 ```
 Funny eh :-)? 
 
-Well maybe you don't think so, but that's not a problem, you are free to send out your own jokes.
+Maybe not, but that's not a problem, you are free to send out your own jokes.
 
-Because what we have just done, by the simple act of defining some type of information and sending out an item of that type, is to create a big fat global channel where jokes of all kinds can now flow. 
+Because what we have just done, by the simple act of defining some type of information and sending out an item of that type, is to create a big fat global channel where jokes of all kinds can now flow.
 
 And that's precisely how Top, the type oriented protocol, works.
 
@@ -47,7 +47,7 @@ In Top, all communication takes place on bi-directional *typed* channels, that's
 
 Data does not flow from A to B but rather all data of the same type flows on a single, globally unique, channel and anyone can define new data types and send and receive data values.
 
-You can [see it in action](http://quid2.org/app/ui). 
+You can [see it in action](http://quid2.org/app/ui).
 
 Under the *Channels* tab are listed the currently open channels, every channel has a type and you can see its full definition by clicking on *Definition*.
 
@@ -61,14 +61,13 @@ Under the *Types* tab is the list of types known to the system.
 
 Top does not provide any other service beyond full-duplex typed communication, any other service (e.g. identification or encryption) has to be provided by the clients themselves but that can be done easily and independently by simply creating data types that stands for the additional functionality required.
 
-
  ### Haskell API
 
 This repo provides an Haskell API for Top.
 
 The API is compatible with both [ghc](https://www.haskell.org/ghc/) (tested with 7.10.3) and [ghcjs](https://github.com/ghcjs/ghcjs) so it can be used to develop both stand alone and WWW applications.
 
-APIs for other programming languages are planned and help in developing them would be greatly appreciated.
+Help in developing APIs for other programming languages would be greatly appreciated :-)
 
  #### Usage
 

@@ -13,15 +13,15 @@ Someone had to fix the problem, patiently reorganising the Internet library by t
 
 The root of the problem is the way information is accessed and transferred on the Internet. The communication protocol at the heart of the Web, the [HTTP](https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol), as in fact those of most widely used Internet systems, is a point-to-point protocol.
 
-Point-to-point simply means that information flows from A to B where A and B are publishers and/or consumers of information. It is the simplest but not always the most convenient form of communication as it's often the case that A does not in fact want to communicate with B at all, but would rather talk *about something* or exchange some specific *type* of information.
+Point-to-point simply means that information flows from A to B where A and B are publishers and/or consumers of information. It is the simplest but not always the most convenient form of communication as it's often the case that A does not in fact want to communicate with B at all, but would rather talk about *something* or exchange some specific *type* of information.
 
-Say for example that you know some excellent jokes that you would be willing to share with the world. You don't want to call Joe and then Jake and then Marian to make them laugh. You want to make people, not a specific person, laugh. Now say that you could simply define what a joke is and then start sending them out and that anyone interested could tune in and have a good time reading them and sending out their own.
+Say for example that you have some excellent jokes that you would be willing to share with the world. You don't want to call Joe and then Jake and then Marian to make them laugh. You want to make people, not a specific person, laugh. Now say that you could simply define what a joke is and then start sending them out and that anyone interested could tune in and have a good time reading them and sending out their own.
 
 We might define a joke, in a very simple way, as:
 
 ```haskell
 data Joke = Joke Text
-```
+````
 
 that basically means: 'a joke is just a text marked as being a joke'.
 
@@ -34,9 +34,9 @@ send jokesChannel (Joke "Notice on an Italian bus: don’t talk to the driver, h
 ```
 Funny eh :-)? 
 
-Maybe not, but that's not a problem as you are free to send out your own jokes.
+Maybe not, but that's not a problem, you are free to send out your own jokes.
 
-Because what we have just done, by the simple act of defining some type of information and sending out an item of that type, is to create a big fat global channel where jokes of all kinds can now flow. 
+Because what we have just done, by the simple act of defining some type of information and sending out an item of that type, is to create a big fat global channel where jokes of all kinds can now flow.
 
 And that's precisely how Top, the type oriented protocol, works.
 
@@ -48,7 +48,7 @@ In Top, all communication takes place on bi-directional *typed* channels, that's
 
 Data does not flow from A to B but rather all data of the same type flows on a single, globally unique, channel and anyone can define new data types and send and receive data values.
 
-You can [see it in action](http://quid2.org/app/ui). 
+You can [see it in action](http://quid2.org/app/ui).
 
 Under the *Channels* tab are listed the currently open channels, every channel has a type and you can see its full definition by clicking on *Definition*.
 
@@ -62,7 +62,6 @@ Under the *Types* tab is the list of types known to the system.
 
 Top does not provide any other service beyond full-duplex typed communication, any other service (e.g. identification or encryption) has to be provided by the clients themselves but that can be done easily and independently by simply creating data types that stands for the additional functionality required.
 
-
 ### Haskell API
 
 This repo provides an Haskell API for Top.
@@ -75,8 +74,8 @@ Help in developing APIs for other programming languages would be greatly appreci
 
 Using Top can be as simple as:
 
-````haskell
-{-# LANGUAGE DeriveGeneric #-}
+```haskell
+{-# LANGUAGE DeriveGeneric ,DeriveAnyClass #-}
 import Network.Top
 
 -- |Send a message and then print out all messages received
@@ -90,19 +89,14 @@ main = runClient def ByType $ \conn -> do
 data Message = Message {
      fromUser::String
     ,content::Content
-    } deriving (Eq, Ord, Read, Show, Generic)
+    } deriving (Eq, Ord, Read, Show, Generic , Flat, Model)
 
 data Content =
     TextMessage String
 
     | HTMLMessage String
-    deriving (Eq, Ord, Read, Show, Generic)
-
-instance Flat Message
-instance Flat Content
-instance Model Message
-instance Model Content
-````
+    deriving (Eq, Ord, Read, Show, Generic, Flat, Model)
+```
 [Source Code](https://github.com/tittoassini/top-apps/blob/master/app/hello.hs)
 
 For examples of stand-alone and www applications see:
