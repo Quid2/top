@@ -14,7 +14,7 @@ t = t1 >> t2
    -- solve (Proxy::Proxy Repo)
    -- let local = def {ip="127.0.0.1",port=8080}
 
-t1 = recordType def (Proxy::Proxy Repo)
+t1 = recordType def (Proxy::Proxy (ChannelSelectionResult (WebSocketAddress IP4Address))) -- Repo)
 t2 = solveType def (Proxy::Proxy Char)
 t3 = knownTypes def
 

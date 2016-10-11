@@ -1,6 +1,8 @@
-{-# LANGUAGE DeriveFoldable #-}
-{-# LANGUAGE DeriveFunctor  #-}
-{-# LANGUAGE DeriveGeneric ,OverloadedStrings #-}
+{-# LANGUAGE DeriveAnyClass    #-}
+{-# LANGUAGE DeriveFoldable    #-}
+{-# LANGUAGE DeriveFunctor     #-}
+{-# LANGUAGE DeriveGeneric     #-}
+{-# LANGUAGE OverloadedStrings #-}
 module Network.Top.Types(
   module Data.Typed
   ,Config(..),cfgIP,cfgPort,cfgPath
@@ -9,19 +11,22 @@ module Network.Top.Types(
   ,def
   ,ByType(..)
   ,Echo(..)
-  ,ByPattern(..),L.ByteString
+  ,ByPattern(..),L.ByteString,ChannelSelectionResult(..),WebSocketAddress(..),SocketAddress(..),IP4Address(..),IP6Address
 --  ,module Data.Pattern
+  ,chatsProtocol,chatsProtocolT,WSChannelResult
   ) where
 
+import qualified Data.ByteString  as B
 import qualified Data.ByteString.Lazy   as L
 import           Data.Default.Class
 import           Data.Functor.Invariant
-import           Data.Pattern           hiding (Con, Var)
+import           Data.Pattern.Types     hiding (Con, Var)
+import           Data.Text              (Text)
+import qualified Data.Text              as T
 import           Data.Typed
-import           Data.Text(Text)
-import  qualified         Data.Text as T
 import           Data.Word
 import qualified Network.WebSockets     as WS
+import           Data.Text.Encoding
 
 -- |General client configuration (ip,port and path of the Top access point)
 -- data Config = Config {ip::String,port::Int,path::String}
@@ -36,16 +41,16 @@ cfgPort = fromIntegral . port . socketPort . host . accessPoint
 cfgPath :: Config -> String
 cfgPath = T.unpack . path . accessPoint
 
--- TODO: point to failover ip
--- MAYBE: retrieve at a fixed address a list of servers' IP and then map the request by the 1-byte hash of the router type (eg. servers=[ip1,ip2] hash=x92 -> ip2)
--- MAYBE:use a fixed range of ips (say 256)
--- instance Default Config where def = Config "quid2.net" 8080 "/ws"
-instance Default Config where def = Config (WebSocketAddress False (SocketAddress (DNSAddress "quid2.net") (HostPort 8080)) "/ws")
--- instance Default Config where def = Config "127.0.0.1" 8080 "/ws"
+chatsProtocol :: B.ByteString
+chatsProtocol = encodeUtf8 chatsProtocolT
+
+chatsProtocolT :: T.Text
+chatsProtocolT = "chats"
+
+instance Default Config where def = Config $ WebSocketAddress False (SocketAddress (DNSAddress "quid2.net") (HostPort 80)) "/ws"
 
 -- |A typed connection
- -- data Connection a = Connection WS.Connection
--- data Connection a = Connection WSConnection
+-- data Connection a = Connection WS.Connection
 
 -- CHECK: use Input/Output from pipes-concurrency instead?
 -- data WSConnection = WSConnection {sendMsg :: L.ByteString -> IO (),receiveMsg :: IO L.ByteString}
@@ -107,9 +112,8 @@ instance Model a => Model (Echo a)
 -- Clients:
 -- send messages of the given type
 -- receive all messages of the same type sent by other agents
-data ByType a = ByType deriving (Eq, Ord, Show, Generic)
+data ByType a = ByType deriving (Eq, Ord, Show, Generic, Flat)
 
-instance Flat (ByType a)
 instance Model a =>  Model (ByType a)
 
 -- |A router index by a pattern of a given type:
@@ -117,19 +121,22 @@ instance Model a =>  Model (ByType a)
 -- send messages of the given type
 -- receive all messages of the same type, that match the given pattern, sent by other agents
 -- NOTE: not yet implemented
-data ByPattern a = ByPattern (Pattern WildCard) deriving (Eq, Ord, Show, Generic)
+data ByPattern a = ByPattern (Pattern WildCard) deriving (Eq, Ord, Show, Generic, Flat)
 
-instance Flat (ByPattern a)
 instance Model a => Model (ByPattern a)
 
-data RoutingSelectionResult addr =
-  -- |The channel has been permanently setup to the requested routing protocol
+data ChannelSelectionResult addr =
+  -- |The channel has been permanently setup to the requested protocol
   Success
   -- |The access point is unable or unwilling to open a connection with the requested routing protocol
   | Failure {reason::Text}
   -- |User should retry with the same transport protocol at the indicated address
   | RetryAt addr
-  deriving (Eq, Ord, Show, Generic)
+  deriving (Eq, Ord, Show, Generic,Flat)
+
+instance Model a => Model (ChannelSelectionResult a)
+
+type WSChannelResult = ChannelSelectionResult (WebSocketAddress IP4Address)
 
 data WebSocketAddress ip = WebSocketAddress {
   -- |True if the connection is wss, False if is ws
@@ -138,17 +145,15 @@ data WebSocketAddress ip = WebSocketAddress {
   ,host::SocketAddress ip
   -- |Path to the WebSocket entry point, example: "/ws"
   ,path::Text
-  } deriving (Eq, Ord, Show, Generic)
-instance Flat ip => Flat (WebSocketAddress ip)
+  } deriving (Eq, Ord, Show, Generic, Flat)
+
 instance Model ip => Model (WebSocketAddress ip)
 
-data SocketAddress ip = SocketAddress {socketAddress::HostAddress ip,socketPort::HostPort} deriving (Eq, Ord, Show, Generic)
-instance Flat ip => Flat (SocketAddress ip)
+data SocketAddress ip = SocketAddress {socketAddress::HostAddress ip,socketPort::HostPort} deriving (Eq, Ord, Show, Generic,Flat)
+
 instance Model ip => Model (SocketAddress ip)
 
-data HostPort = HostPort {port::Word16} deriving (Eq, Ord, Show, Generic)
-instance Flat HostPort
-instance Model HostPort
+data HostPort = HostPort {port::Word16} deriving (Eq, Ord, Show, Generic,Flat,Model)
 
 data HostAddress ip =
   IPAddress ip
@@ -159,17 +164,13 @@ instance Model ip => Model (HostAddress ip)
 
 instance Pretty ip => Pretty (HostAddress ip) where
   pPrint (IPAddress ip) = pPrint ip
-  pPrint (DNSAddress t) = txt t
+  pPrint (DNSAddress t) = ptxt t
 
-data IP4Address = IP4Address Word8 Word8 Word8 Word8 deriving (Eq, Ord, Show, Generic)
-instance Flat IP4Address
-instance Model IP4Address
+data IP4Address = IP4Address Word8 Word8 Word8 Word8 deriving (Eq, Ord, Show, Generic, Flat, Model)
 
-instance Pretty IP4Address where pPrint (IP4Address w1 w2 w3 w4) = let dot = T.singleton '.' in txt . T.intercalate dot . map tshow $ [w1,w2,w3,w4]
+instance Pretty IP4Address where pPrint (IP4Address w1 w2 w3 w4) = let dot = T.singleton '.' in ptxt . T.intercalate dot . map (T.pack . hex) $ [w1,w2,w3,w4]
 
-data IP6Address = IP6Address Word16 Word16 Word16 Word16 Word16 Word16 Word16 Word16 deriving (Eq, Ord, Show, Generic)
-instance Flat IP6Address
-instance Model IP6Address
+data IP6Address = IP6Address Word16 Word16 Word16 Word16 Word16 Word16 Word16 Word16 deriving (Eq, Ord, Show, Generic, Flat, Model)
 
-
+ptxt = txt . T.unpack
 

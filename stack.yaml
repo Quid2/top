@@ -2,6 +2,9 @@ resolver: lts-6.0
 
 packages:
 - '.'
-- ../flat
-- ../model
-- ../typed
+# - ../flat
+# - ../model
+#- ../typed
+- location: https://github.com/tittoassini/flat/archive/master.zip
+- location: https://github.com/tittoassini/model/archive/master.zip
+- location: https://github.com/tittoassini/typed/archive/master.zip

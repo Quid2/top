@@ -1,41 +1,48 @@
+{-# LANGUAGE CPP                       #-}
+{-# LANGUAGE ForeignFunctionInterface  #-}
+{-# LANGUAGE GHCForeignImportPrim      #-}
+{-# LANGUAGE JavaScriptFFI             #-}
+{-# LANGUAGE MagicHash                 #-}
 {-# LANGUAGE NoMonomorphismRestriction #-}
 {-# LANGUAGE OverloadedStrings         #-}
 {-# LANGUAGE ScopedTypeVariables       #-}
-{-# LANGUAGE CPP #-}
-{-# LANGUAGE ForeignFunctionInterface, JavaScriptFFI, UnboxedTuples, GHCForeignImportPrim, UnliftedFFITypes,
-              MagicHash
- #-}
+{-# LANGUAGE UnboxedTuples             #-}
+{-# LANGUAGE UnliftedFFITypes          #-}
 module Network.Top.WebSockets(
   runWSClient--,sendMsg,receiveMsg
-  ,protocol
+  -- ,protocol
   ) where
 
-import qualified Data.ByteString     as B
-import qualified Data.ByteString.Lazy     as L
+import           Control.Exception
+import qualified Data.ByteString                   as B
+import qualified Data.ByteString.Lazy              as L
 import           Network.Top.Types
-import Network.Top.Util
-import Control.Exception
+import           Network.Top.Util
+
 
 #ifdef ghcjs_HOST_OS
 -- GHC-JS Version
-import JavaScript.Web.WebSocket hiding (close)
-import qualified JavaScript.Web.WebSocket as JS
-import qualified Data.JSString              as S
-import GHCJS.Types
-import GHCJS.Marshal
-import GHCJS.Marshal.Pure
-import GHCJS.Buffer
-import qualified GHCJS.Buffer as Buffer
-import GHCJS.Foreign.Internal
-import JavaScript.Web.MessageEvent
-import qualified Control.Concurrent.STM as S
-import Control.Applicative (Alternative(empty, (<|>)))
-import Data.Maybe
-import JavaScript.Web.Blob.Internal (Blob, SomeBlob(..))
+import           Control.Applicative               (Alternative (empty, (<|>)))
+import qualified Control.Concurrent.STM            as S
+import qualified Data.JSString                     as S
+import           Data.Maybe
+import           GHCJS.Buffer
+import qualified GHCJS.Buffer                      as Buffer
+import           GHCJS.Foreign
+import           GHCJS.Foreign.Internal
+import           GHCJS.Marshal
+import           GHCJS.Marshal.Pure
+import           GHCJS.Types
+import           JavaScript.Web.Blob.Internal      (Blob, SomeBlob (..))
+import           JavaScript.Web.MessageEvent
+import           JavaScript.Web.WebSocket          hiding (close)
+import qualified JavaScript.Web.WebSocket          as JS
+import           JavaScript.TypedArray.ArrayBuffer
+import qualified JavaScript.TypedArray.ArrayBuffer as A
+import           GHC.Exts
+import qualified Data.Text as T
 -- import JavaScript.TypedArray -- ArrayBuffer, SomeArrayBuffer(..))
-import JavaScript.TypedArray.ArrayBuffer -- ArrayBuffer, SomeArrayBuffer(..))
 -- import JavaScript.TypedArray.Internal -- ArrayBuffer, SomeArrayBuffer(..))
-import GHC.Exts
 
 data ConnStatus a = ConnOpening
                   | ConnOpen {inp::IO a,out::a -> IO (),cls::IO ()}
@@ -89,8 +96,8 @@ reopen c = do
   dbgS "[reopen"
   let cfg = connConfig c
   econn <- tryE (JS.connect $ JS.WebSocketRequest {
-                    url= S.pack $ concat ["ws://",ip cfg,":",show (port cfg),path cfg]
-                    ,protocols=[S.pack "quid2.net"]
+                    url= S.pack $ concat ["ws://",cfgIP cfg,":",show (cfgPort cfg),cfgPath cfg]
+                    ,protocols=[S.pack $ T.unpack $ chatsProtocolT]
                     ,onClose  =  Just $ \_ -> closeConn c
                     ,onMessage = Just $ \event -> do
                         dbgS "received message"
@@ -130,10 +137,12 @@ reopen c = do
             --    Just msg -> return msg
              inp = do
                r <- S.atomically $ S.readTQueue (connMessages c)
-               dbg ["received",show $ L.unpack r]
+               -- dbg ["received",show $ L.unpack r]
                return r
 
-             out v = dbg ["send",show $ L.unpack v] >> webSocketSend ws (L.toStrict v)
+             out v = do
+               -- dbg ["send",show $ L.unpack v]
+               webSocketSend ws (L.toStrict v)
              -- out v = do
               --   r <- tryE (webSocketSend conn (L.toStrict v))
              --   case r of
@@ -217,18 +226,12 @@ reopen c = do
 toBS = Buffer.toByteString 0 Nothing . Buffer.createFromArrayBuffer
 -- toBS1 = Buffer.toByteString 0 Nothing
 
--- CREDIT: adapted from https://github.com/reflex-frp/reflex-dom/blob/develop/src-ghcjs/Reflex/Dom/WebSocket/Foreign.hs
--- Websocketsend :: JSWebSocket -> ByteString -> IO ()
+webSocketSend :: WebSocket -> B.ByteString -> IO ()
 webSocketSend ws bs | B.length bs == 0 = return ()
                     | otherwise = do
                         let (b, off, len) = fromByteString bs
-                        -- let ab = ArrayBuffer $ js_dataView off len (jsval $ getArrayBuffer b)
-                        -- send ws (Just ab)
-                        -- let ab = js_dataView off len (jsval $ getArrayBuffer b)
-                        -- ?BUG:sending extra bytes
-                        let ab = getArrayBuffer b
-                        sendArrayBuffer ab ws
-                        -- return ()
+                        -- dbgS $ unwords ["BUFFER OFF",show off,"LEN",show len]
+                        js_sendByteString ws (getArrayBuffer b) off len
 
 foreign import javascript safe "new DataView($3,$1,$2)" js_dataView :: Int -> Int -> JSVal -> JSVal
 
@@ -239,6 +242,11 @@ getDataFixed me = case js_getData me of
                 (# 2#, r #) -> Left "Unexpected Blob"
                 (# 3#, r #) -> Right $ toBS r -- ArrayBufferData ArrayBuffer -- (SomeArrayBuffer r)
 {-# INLINE getDataFixed #-}
+
+foreign import javascript unsafe
+    --"$1.send(new Uint8Array($2,$3,$4));$r=new Uint8Array($2,$3,$4).byteLength"
+    "$1.send(new Uint8Array($2,$3,$4))"
+    js_sendByteString :: WebSocket -> ArrayBuffer -> Int -> Int -> IO ()
 
 foreign import javascript unsafe
     "$r2 = $1.data;$r1 = typeof $r2 === 'string' ? 1 : ($r2 instanceof ArrayBuffer ? 3 : 2)"
@@ -257,7 +265,7 @@ import qualified Network.WebSockets       as WS
 -- Automatically close sockets on App exit
 runWSClient :: Config -> WSApp r -> IO r
 runWSClient cfg app =
-     WS.runClientWith (cfgIP cfg) (cfgPort cfg) (cfgPath cfg) opts [("Sec-WebSocket-Protocol", "??")] $ \conn -> do
+     WS.runClientWith (cfgIP cfg) (cfgPort cfg) (cfgPath cfg) opts [("Sec-WebSocket-Protocol", chatsProtocol)] $ \conn -> do
        -- WS.forkPingThread conn 20 -- Keep connection alive avoiding timeouts (FIX: the server should send pings as this is required by browsers)
        --WS.sendClose conn (1000::Int)
        -- app $ Connection
@@ -281,9 +289,3 @@ runWSClient cfg app =
 
 #endif
 
--- |Setup a connection by sending a value specifying the routing protocol to be used
--- protocol :: (Model (router a), Flat (router a)) => Connection a -> router a -> IO Bool
--- protocol conn =  send conn . typedBytes
-protocol conn router = do
-  dbg ["protocol",show router]
-  output conn . flat . typedBytes $ router

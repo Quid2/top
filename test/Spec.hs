@@ -7,7 +7,7 @@ import           Control.Exception             (SomeException, catch, handle)
 import           Data.Typed
 import qualified Data.ByteString.Lazy          as BL
 import           Data.Word                     (Word16)
-import           Network.Router.API
+import           Network.Top
 import           System.Log.Logger
 import           Control.Concurrent            (threadDelay)
 import  qualified Network.WebSockets as WS
@@ -16,6 +16,8 @@ import           Network.WebSockets.Connection(sendCloseCode)
 import Control.Concurrent.Async
 import  Control.Concurrent.STM
 import Data.Word
+import Data.Maybe
+import Data.Either
 
 t = main
 
@@ -26,9 +28,10 @@ main = do
     tasks <- concat <$> sequence [--wsTest
                                  -- byTypeSimpleTest
                                  -- ,byTypeTest [True,False,True] 2
-                                 byTypeTest [TextMsg "ciao",Join,TextMsg "ok"] 25
+                                 byTypeTest [TextMsg "ciao",Join,TextMsg "ok"] 1
                                  ]
-    mapM_ wait tasks
+    r <- (\(ls,rs) -> catMaybes $ map (const $ Just "Interrupted Test") ls ++ map (\r -> if r then Nothing else Just "Failed Test") rs) . partitionEithers <$> mapM waitCatch tasks
+    print $ if null r then "No Test Errors" else "Test Errors: " ++ unwords r
 
     -- -- let numDeviceMsgs = 3
     -- -- m <- run $ master numDevices numDeviceMsgs
@@ -63,56 +66,60 @@ main = do
     -- Test low level protocol
     -- WebSockets should support up to 2**64 bytes long messages.
     -- wsTest :: ClientApp Bool
-    wsTest = (:[]) <$> wsTest_
-    wsTest_ = run (Echo False::Echo [Word8]) $ \conn@(Connection connWS) -> do
-      let sendRec msg = do
-            send conn msg
-            msgRet <- receive conn
-            threadDelay 0 -- 10000
-            return $ msg == msgRet
+    -- NOTE: GHC only
+    -- wsTest = (:[]) <$> wsTest_
+    -- wsTest_ = run (Echo False::Echo [Word8]) $ \conn@(Connection connWS) -> do
+    --   let sendRec msg = do
+    --         output conn msg
+    --         msgRet <- input conn
+    --         threadDelay 0 -- 10000
+    --         return $ msg == msgRet
 
-      dbgS "wsTest"
+    --   dbgS "wsTest"
 
-      dbgS "wsTest1"
-      echoOK <- sendRec $ msgL $ 100 --10 * 1000 * 1000000
-      dbgS "wsTest2"
+    --   dbgS "wsTest1"
+    --   echoOK <- sendRec $ msgL $ 100 --10 * 1000 * 1000000
+    --   dbgS "wsTest2"
 
-      -- About 10K round trips per sec, locally.
-      -- chronoIO (mapM (const $ sendRec msg1) [1..10]) >>= chronoPrint "Send Rec Time"
+    --   -- About 10K round trips per sec, locally.
+    --   -- chronoIO (mapM (const $ sendRec msg1) [1..10]) >>= chronoPrint "Send Rec Time"
 
-      mapM (const $ sendRec msg1) [1..10]
-      dbgS "wsTest3"
-      let pingMsg = "What's a fish without an eye?" :: BL.ByteString
-      WS.sendPing connWS pingMsg
-      WS.ControlMessage (WS.Pong pongMsg) <- WS.receive connWS
+    --   mapM (const $ sendRec msg1) [1..10]
+    --   dbgS "wsTest3"
+    --   let pingMsg = "What's a fish without an eye?" :: BL.ByteString
+    --   WS.sendPing connWS pingMsg
+    --   WS.ControlMessage (WS.Pong pongMsg) <- WS.receive connWS
 
-      let closeCode = 11
-      let closeMsg = ("Bye Byte" :: BL.ByteString)
-      sendCloseCode connWS closeCode closeMsg
-      ce <- expectCloseException connWS
+    --   let closeCode = 11
+    --   let closeMsg = ("Bye Byte" :: BL.ByteString)
+    --   sendCloseCode connWS closeCode closeMsg
+    --   ce <- expectCloseException connWS
 
-      return $ echoOK && pingMsg==pongMsg && ce == Right (closeCode,closeMsg)
+    --   return $ echoOK && pingMsg==pongMsg && ce == Right (closeCode,closeMsg)
 
 run router app = async $ do
    let cfg = def
    -- let cfg = def{ip="127.0.0.1"}--,path="/lll"}
    r <- runClient cfg router app
    dbg ["RUN RESULT",show router,show r]
+   return r
 
-byTypeSimpleTest = (:[]) <$> (run (ByType::ByType Char) (\conn -> mapM_ (send conn) ['a'..'c'] >> threadDelay (seconds 10)))
+byTypeSimpleTest = (:[]) <$> (run (ByType::ByType Char) (\conn -> mapM_ (output conn) ['a'..'c'] >> threadDelay (seconds 10)))
 
-byTypeTest :: (Model a,Typed a,Flat a,Show a) => [a] -> Int -> IO [Async ()]
+byTypeTest :: (Model a,Typed a,Flat a,Show a) => [a] -> Int -> IO [Async Bool]
 byTypeTest vs numDevices = do
   count <- newTVarIO 0
-  mapM (\n -> run (ByType) $ \conn -> byTypeClient numDevices vs n count conn) [1..numDevices]
+  mapM (\n -> run ByType $ \conn -> byTypeClient numDevices vs n count conn) [1..numDevices]
 
 byTypeClient :: forall a. (Typed a,Flat a,Show a) => Int -> [a] -> Int -> TVar Int -> Connection a -> IO Bool
 byTypeClient numDevices vs id count conn = do
    -- make sure all clients are connected or we will miss some messages.
   atomically $ modifyTVar' count (+1)
   waitAllStarted -- threadDelay $ secs 1 
-  mapM_ (send conn) vs
-  vs' :: [a] <- mapM (\_-> receive conn) [1 .. (numDevices-1)*length vs]
+  mapM_ (output conn) vs
+  vs' :: [()] <- mapM (\_-> input conn >>= print) [1 .. (numDevices-1)*length vs]
+  print "All read"
+  print vs'
   return True
     where
       waitAllStarted = do
