@@ -114,7 +114,7 @@ It is not yet on [hackage](https://hackage.haskell.org/) but you can still use i
 packages:
 - location:
    git: https://github.com/tittoassini/top
-   commit:e5bd714
+   commit: e5bd714
 ````
 
 #### Compatibility
