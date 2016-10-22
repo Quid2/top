@@ -108,7 +108,18 @@ For examples of stand-alone and www applications see:
 
 #### Installation
 
-Currently must be installed as part of the [quid2](https://github.com/tittoassini/quid2) project.
+It is not yet on [hackage](https://hackage.haskell.org/) but you can still use it in your [stack](https://docs.haskellstack.org/en/stable/README/) projects by adding a reference to its github location under the 'packages' section:
+
+````
+packages:
+- location:
+   git: https://github.com/tittoassini/top
+   commit: 
+````
+
+#### Compatibility
+
+Tested with [ghc](https://www.haskell.org/ghc/) 7.10.3 and 8.0.1.
 
 ### The Top Service.
 

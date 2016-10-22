@@ -7,9 +7,10 @@
 module Data.Pattern.Types(
   Pattern(..),WildCard(..),showPatt
   ,patternQ,filterPatternQ,prefixPattern,onlyWildCards,HVar(..)
-  ,Q,Pat,Match(..),pattern2Match,Matcher,envPattern,PatternMatcher,BitMask(..),andMask
+  ,Q,Pat,Match(..),pattern2Match,Matcher,envPattern,PatternMatcher,BitMask(..),andMask,MatchError(..),boolsSplit,bitSplit,mapPM,asMSBits,asLSBits,littleEndian16
   ) where
 
+import Data.Bits
 import           Data.Bifunctor
 import qualified Data.ByteString            as B
 import           Data.Either
@@ -35,6 +36,8 @@ Alternative coding more? efficient to check for validity of values (not really)
 
 -- Does the flat encoded info matches a pattern?
 type Matcher = B.ByteString -> Bool
+
+data MatchError = NotEnoughData | TooMuchData deriving (Eq,Show)
 
 -- Low level matcher
 data BitMask =
@@ -63,33 +66,57 @@ data BitMask =
 x = bitSplit [True,True,False,True] == [Bits8 4 208]
 xx = bitSplit8 [True,True,False,True,False,False,False,True,True] == [Bits8 8 209,Bits8 1 128]
 
-type PatternMatcher = (TypeMatchers,[Match AbsRef [BitMask]])
+--type PatternMatcher = (TypeMatchers,[Match AbsRef [BitMask]])
+type PatternMatcher = (TypeMatchers,[Match AbsRef [Bool]])
 
 -- TODO: leave only needed types
 envPattern :: AbsoluteType -> Pattern WildCard -> Either String PatternMatcher
-envPattern at pat = second ((bitSplit8 <$>) <$>) . (matchTree at,) <$> pattern2Match at pat
+-- envPattern at pat = second ((bitSplit8 <$>) <$>) . (matchTree at,) <$> pattern2Match at pat
+envPattern at pat = (matchTree at,) <$> pattern2Match at pat
+
+mapPM :: ([Bool] -> b) -> PatternMatcher -> (TypeMatchers,[Match AbsRef b])
+mapPM f = second ((f <$>) <$>) 
 
 bitSplit8 [] = []
 bitSplit8 bs =
   let (bs',bs'') = splitAt 8 bs
-  in Bits8 (length bs') (asBits 8 bs') : bitSplit bs''
+  in Bits8 (length bs') (asLSBits 8 bs') : bitSplit8 bs''
 
 bitSplit [] = []
-bitSplit bs | length bs <= 8   = [Bits8 (length bs) (asBits 8 bs)]
-bitSplit bs | length bs <= 16  = [Bits16 (length bs) (asBits 16 bs)]
-bitSplit bs | length bs <= 32  = [Bits32 (length bs) (asBits 32 bs)]
-bitSplit bs | length bs <= 64  = [Bits64 (length bs) (asBits 64 bs)]
+bitSplit bs | length bs <= 8   = [Bits8 (length bs) (asLSBits 8 bs)]
+bitSplit bs | length bs <= 16  = [Bits16 (length bs) (asLSBits 16 bs)]
+bitSplit bs | length bs <= 32  = [Bits32 (length bs) (asLSBits 32 bs)]
+bitSplit bs | length bs <= 64  = [Bits64 (length bs) (asLSBits 64 bs)]
 bitSplit bs =
   let (bs',bs'') = splitAt 64 bs
-  in Bits64 64 (asBits 64 bs') : bitSplit bs''
+  in Bits64 64 (asLSBits 64 bs') : bitSplit bs''
 
-asBits n bs | n >= length bs = asNum (bs ++ replicate (n - length bs) False)
+boolsSplit :: Int -> [a] -> [[a]]
+boolsSplit maxN bs | length bs <= maxN = [bs]
+                   | otherwise = let (h,t) = splitAt maxN bs in h : boolsSplit maxN t
+
+-- LSB
+asLSBits :: Num c => Int -> [Bool] -> c
+asLSBits n bs | n >= length bs = asNum bs
+
+-- MSB
+asMSBits :: Num c => Int -> [Bool] -> c
+asMSBits n bs | n >= length bs = asNum (bs ++ replicate (n - length bs) False)
+
+littleEndian16 w = (w .&. 255) * 256 + shiftR w 8
+
+-- Little endian
+-- asMSBitsLE n bs | n >= length bs && n `mod` 8 == 0 = asNum (bs ++ replicate (n - length bs) False)
 
 y = map (andMask 8) [0..8]
 
+m = asMSBits 16 [True,False,True]
+
+-- n=1  -> 100000..
+-- n=2  -> 11000..
 andMask :: Num c => Int -> Int -> c
 andMask tot n | tot>=n = asNum (replicate n True ++ replicate (tot-n) False)
-
+              | otherwise = error $ unwords ["andMask",show tot, show n]
 -- asNum bs = sum . map (\(n,b) -> if b then 2^n else 0) . zip [0..] . reverse $ bs
 asNum bs = sum . map (\(n,b) -> if b then 2^n else 0) . zip [0..] . reverse $ bs
 
@@ -119,7 +146,10 @@ data Pattern v =
 
   | Var v      -- A variable
 
+  -- This assumes a specific mapping of basic types to absolute types
   | Val [Bool] -- A value, binary encoded (using 'flat')
+
+  -- PInteger Integer -- TO BE MAPPED TO APPROPRIATE NUMERIC TYPE
   deriving (Functor,Foldable,Eq, Ord, Show, Generic)
 
 instance Flat v => Flat (Pattern v)
@@ -173,21 +203,30 @@ convertPattern
 convertPattern onVar onWild p = runQ (p >>= convertM onVar onWild)
   where
     convertM onVar onWild pat = case pat of
+      ConP n [] | name n == "[]" -> return $ Con "Nil" []
       ConP n args -> Con (T.pack $ name n) <$> mapM (convertM onVar onWild) args
       VarP n -> return $ onVar (name n)
       WildP -> return onWild
       LitP l -> return . convLit $ l
       ParensP p -> convertM onVar onWild p
-      -- InfixP p1 (Name (OccName ":" ) (NameG DataName (PkgName "ghc-prim") (ModName "GHC.Types"))) p2 -> error . unwords $ ["GOTIT"]
-      p -> error . unwords $ ["Unsupported pattern",pprint p]
+      InfixP p1 (Name (OccName ":" ) (NameG DataName (PkgName "ghc-prim") (ModName "GHC.Types"))) p2 -> (\a b -> Con "Cons" [a,b]) <$> (convertM onVar onWild p1) <*> (convertM onVar onWild p2)
+      ListP ps -> convList <$> mapM (convertM onVar onWild) ps
+      TupP [p1,p2] -> (\a b -> Con "Tuple2" [a,b]) <$> (convertM onVar onWild p1) <*> (convertM onVar onWild p2)
+      TupP [p1,p2,p3] -> (\a b c -> Con "Tuple3" [a,b,c]) <$> (convertM onVar onWild p1) <*> (convertM onVar onWild p2) <*> (convertM onVar onWild p3)
+      TupP [p1,p2,p3,p4] -> (\a b c d -> Con "Tuple4" [a,b,c,d]) <$> (convertM onVar onWild p1) <*> (convertM onVar onWild p2) <*> (convertM onVar onWild p3) <*> (convertM onVar onWild p4)
+      p -> error . unwords $ ["Unsupported pattern",show p] -- pprint p,show p]
 
     name (Name (OccName n) _) = n
 
     convLit l = case l of
        CharL c -> valPattern c
        StringL s -> valPattern s
-       IntegerL i -> valPattern i -- PROB: what type to map to
+       -- BUG::always interpreted as Integral (signed Int) (should be mapped to right numerical type)
+       IntegerL i -> valPattern i
        -- RationalL r -> valPattern r
+
+    convList [] = Con "Nil" []
+    convList (h:t) = Con "Cons" [h,convList t]
 
 showPatt :: Pattern HVar -> String
 showPatt (Con n ps) = unwords ["Data.Pattern.Con",show n,"[",intercalate "," . map showPatt $ ps,"]"]

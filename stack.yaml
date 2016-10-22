@@ -1,10 +1,22 @@
-resolver: lts-6.0
+#resolver: lts-6.22
+resolver: lts-7.4
 
 packages:
 - '.'
+
 # - ../flat
+- location:
+   git: https://github.com/tittoassini/flat
+   commit: 3ae580d
+
+# TO BE REMOVED WHEN MODEL IN HACKAGE
 # - ../model
-#- ../typed
-- location: https://github.com/tittoassini/model/archive/master.zip
-- location: https://github.com/tittoassini/flat/archive/master.zip
-- location: https://github.com/tittoassini/typed/archive/master.zip
+- location:
+   git: https://github.com/tittoassini/model
+   commit: 0e1fe4f
+
+# - ../typed
+- location:
+   git: https://github.com/tittoassini/typed
+   commit: 5cb0f72
+
