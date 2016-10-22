@@ -1,5 +1,5 @@
-#resolver: lts-6.22
-resolver: lts-7.4
+resolver: lts-6.22
+#resolver: lts-7.4
 
 packages:
 - '.'
@@ -9,7 +9,6 @@ packages:
    git: https://github.com/tittoassini/flat
    commit: 3ae580d
 
-# TO BE REMOVED WHEN MODEL IN HACKAGE
 # - ../model
 - location:
    git: https://github.com/tittoassini/model

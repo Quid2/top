@@ -91,6 +91,15 @@ packages:
 - location:
    git: https://github.com/tittoassini/top
    commit: e5bd714
+- location:
+   git: https://github.com/tittoassini/typed
+   commit: 5cb0f72
+- location:
+   git: https://github.com/tittoassini/flat
+   commit: 3ae580d
+- location:
+   git: https://github.com/tittoassini/model
+   commit: 0e1fe4f
 ````
 
  #### Compatibility
