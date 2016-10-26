@@ -1,6 +1,6 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 module Network.Top.Run(
-  runClient,runClientForever,protocol
+  runClient,runClient_,runClientForever,protocol,byTypeRouter
             --,send,receive
   ) where
 
@@ -11,6 +11,13 @@ import           Network.Top.Types
 import           Network.Top.Util
 import           Network.Top.WebSockets
 import qualified Data.Text                         as T
+
+--x = runClient def (byTypeRouter (absType (Proxy::Proxy Bool))) (\conn -> return())
+
+byTypeRouter :: Type AbsRef -> TypedBLOB
+byTypeRouter t =
+  let TypeApp f _ = absType (Proxy::Proxy (ByType ()))
+  in typedBLOB_ (TypeApp f t) ByType
 
 -- |Permanently connect an application to a typed channel.
 -- |Restart client in case of network or application failure.
@@ -29,16 +36,22 @@ runClientForever cfg router app = forever $ do
 runClient :: (Model (router a), Flat (router a),Show (router a),Flat a,Show a) => Config -> router a -> App a r -> IO r
 runClient cfg router app = do
       dbg ["run",show router]
-      run cfg 1
+      runClient_ cfg (typedBLOB router) (\conn -> app (Connection (receive conn) (send conn) (close conn)))
+
+runClient_
+  :: (Show a, Flat a) =>
+     Config -> a -> (Connection ByteString -> IO b) -> IO b
+runClient_ cfg routerBin app = run cfg 1
   where
     run _   4 = errIn "Too many redirects"
     run cfg n = do
       res <- runWSClient cfg $ \conn -> do
-        send conn . typedBytes $ router
+        send conn routerBin
         r::WSChannelResult <- receive conn
         case r of
           Failure why -> errIn (T.unpack why)
-          Success -> Right <$> app (Connection (receive conn) (send conn) (close conn))
+          Success -> Right <$> app conn -- (Connection (receive conn) (send conn) (close conn))
+          --Success -> Right <$> app (Connection (receive conn) (send conn) (close conn))
           RetryAt addr -> return (Left $ Config addr)
       case res of
         Left cfg' -> run cfg' (n+1)
@@ -70,11 +83,11 @@ receive conn = do
 
 -- |Setup a connection by sending a value specifying the routing protocol to be used
 -- protocol :: (Model (router a), Flat (router a)) => Connection a -> router a -> IO Bool
--- protocol conn =  send conn . typedBytes
+-- protocol conn =  send conn . typedBLOB
 protocol :: (Show r, Model r, Flat r) => Connection ByteString -> r -> IO ()
 protocol conn router = do
   dbg ["protocol",show router]
-  send conn . typedBytes $ router
+  send conn . typedBLOB $ router
   r::WSChannelResult <- receive conn
   case r of
     Failure why -> err $ T.unpack why

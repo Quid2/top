@@ -17,6 +17,9 @@ t = t1 >> t2
 t1 = recordType def (Proxy::Proxy (ChannelSelectionResult (WebSocketAddress IP4Address))) -- Repo)
 t2 = solveType def (Proxy::Proxy Char)
 t3 = knownTypes def
+-- absADTs :: Model a => Proxy a -> [AbsADT]
+z = mapM (putStrLn . prettyShow) $ absADTs (Proxy::Proxy Word32) --- Identifier) -- Repo)
+g = recordType def (Proxy::Proxy Word32) --- Identifier) -- Repo))
 
 recordType :: Model a => Config -> Proxy a -> IO ()
 recordType cfg proxy = runClient cfg ByType $ \conn -> mapM_ (output conn . Record) . absADTs $ proxy

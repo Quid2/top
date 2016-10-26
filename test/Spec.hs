@@ -18,6 +18,7 @@ import  Control.Concurrent.STM
 import Data.Word
 import Data.Maybe
 import Data.Either
+-- import Data.Pattern.Types
 
 t = main
 
@@ -27,10 +28,11 @@ main = do
 
     tasks <- concat <$> sequence [--wsTest
                                  -- byTypeSimpleTest
-                                 -- ,byTypeTest [True,False,True] 2
-                                 byTypeTest [TextMsg "ciao",Join,TextMsg "ok"] 1
+                                 --byTypeTest [True,False,True] 2,
+                                 byTypeTest [TextMsg "ciao",Join,TextMsg "ok"] 3
                                  ]
     r <- (\(ls,rs) -> catMaybes $ map (const $ Just "Interrupted Test") ls ++ map (\r -> if r then Nothing else Just "Failed Test") rs) . partitionEithers <$> mapM waitCatch tasks
+    --print r
     print $ if null r then "No Test Errors" else "Test Errors: " ++ unwords r
 
     -- -- let numDeviceMsgs = 3
@@ -104,12 +106,15 @@ run router app = async $ do
    dbg ["RUN RESULT",show router,show r]
    return r
 
+byTypeSimpleTest :: IO [Async ()]
 byTypeSimpleTest = (:[]) <$> (run (ByType::ByType Char) (\conn -> mapM_ (output conn) ['a'..'c'] >> threadDelay (seconds 10)))
 
 byTypeTest :: (Model a,Typed a,Flat a,Show a) => [a] -> Int -> IO [Async Bool]
 byTypeTest vs numDevices = do
   count <- newTVarIO 0
   mapM (\n -> run ByType $ \conn -> byTypeClient numDevices vs n count conn) [1..numDevices]
+
+-- x = run ByPattern (Var WildCard) $ \conn -> return ()
 
 byTypeClient :: forall a. (Typed a,Flat a,Show a) => Int -> [a] -> Int -> TVar Int -> Connection a -> IO Bool
 byTypeClient numDevices vs id count conn = do

@@ -15,10 +15,12 @@ cabal-version:       >=1.10
 library
   hs-source-dirs:      src
   exposed-modules:     Data.Pattern.Types,Network.Top,Network.Top.Pipes,Network.Top.Repo,Network.Top.Types,Network.Top.Run,Network.Top.Util,Network.Top.WebSockets,Repo.Types
-  build-depends:       async, base >= 4.7 && < 5, bytestring, data-default-class, flat, template-haskell, hslogger, pipes, transformers, typed, text, websockets,stm,invariant,ListLike
+  build-depends:       async, base >= 4.7 && < 5, bytestring, data-default-class, flat, template-haskell, pipes, transformers, typed, text, stm,invariant,ListLike
 
   if impl(ghcjs)
     build-depends:     ghcjs-base        >= 0.2 && < 0.3
+  else
+    build-depends:    websockets,hslogger 
   default-language:    Haskell2010
 
 test-suite top-test

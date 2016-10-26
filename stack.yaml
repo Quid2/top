@@ -5,17 +5,18 @@ packages:
 - '.'
 
 # - ../flat
+# - ../model
+#- ../typed
+
+- location:
+    git: https://github.com/tittoassini/typed
+    commit: 3d797cf4a7b8d519aff568abff5a3fc1d86aee93
+  extra-dep: true
 - location:
    git: https://github.com/tittoassini/flat
-   commit: 3ae580d
-
-# - ../model
+   commit: 3771f5946dd506c6f199aa4047186d5b57bdce5f
+  extra-dep: true
 - location:
    git: https://github.com/tittoassini/model
-   commit: 0e1fe4f
-
-# - ../typed
-- location:
-   git: https://github.com/tittoassini/typed
-   commit: 5cb0f72
-
+   commit: b05a56a993213271e3b13d28a5e8bb90c9d8576f
+  extra-dep: true

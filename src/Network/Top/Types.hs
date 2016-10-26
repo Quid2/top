@@ -25,7 +25,7 @@ import           Data.Text              (Text)
 import qualified Data.Text              as T
 import           Data.Typed
 import           Data.Word
-import qualified Network.WebSockets     as WS
+-- import qualified Network.WebSockets     as WS
 import           Data.Text.Encoding
 
 -- |General client configuration (ip,port and path of the Top access point)

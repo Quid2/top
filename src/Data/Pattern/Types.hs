@@ -140,14 +140,14 @@ optMatch [] = []
 -- |A nested pattern
 data Pattern v =
   -- |A constructor
-  Con
+  PCon
   T.Text         -- ^Name of the constructor (e.g. "True")
   [Pattern v]  -- ^Patterns for the parameters
 
-  | Var v      -- A variable
+  | PVar v      -- A variable
 
   -- This assumes a specific mapping of basic types to absolute types
-  | Val [Bool] -- A value, binary encoded (using 'flat')
+  | PVal [Bool] -- A value, binary encoded (using 'flat')
 
   -- PInteger Integer -- TO BE MAPPED TO APPROPRIATE NUMERIC TYPE
   deriving (Functor,Foldable,Eq, Ord, Show, Generic)
@@ -166,19 +166,19 @@ instance Flat WildCard
 instance Model WildCard
 
 prefixPattern :: (Foldable t, Flat a) => t a -> Pattern HVar
-prefixPattern = listPatt (Var W)
+prefixPattern = listPatt (PVar W)
 
 listPatt :: (Foldable t, Flat a) => Pattern v -> t a -> Pattern v
-listPatt = foldr (\a p -> Con "Cons" [valPattern a,p])
+listPatt = foldr (\a p -> PCon "Cons" [valPattern a,p])
 
 valPattern :: Flat a => a -> Pattern v
-valPattern = Val . V.bools
+valPattern = PVal . V.bools
 
 -- x = filter [p|\Message _ (subject:_) _ |]
 -- \subject -> Con ... v1
 filterPatternQ :: Quasi m => Q Pat -> m Exp
 filterPatternQ patq = do
-     p <- convertPattern (Var . V) (Var W) patq
+     p <- convertPattern (PVar . V) (PVar W) patq
       -- print $ pmatch p --
      let vars = map (\(V v) -> v) . filter isVar $ toList p
      -- TODO: when done, remove haskell-src-meta
@@ -192,7 +192,7 @@ isVar (V _) = True
 isVar _ = False
 
 patternQ :: Quasi m => Q Pat -> m (Pattern WildCard)
-patternQ = convertPattern (\n -> error $ unwords ["Variables are not allowed in patterns, use wildcards (_) only, found:",n]) (Var WildCard)
+patternQ = convertPattern (\n -> error $ unwords ["Variables are not allowed in patterns, use wildcards (_) only, found:",n]) (PVar WildCard)
 
 -- Literals are converted to their flat representation (alternative: use proper definition?)
 -- Anything else as a nested named pattern
@@ -203,17 +203,17 @@ convertPattern
 convertPattern onVar onWild p = runQ (p >>= convertM onVar onWild)
   where
     convertM onVar onWild pat = case pat of
-      ConP n [] | name n == "[]" -> return $ Con "Nil" []
-      ConP n args -> Con (T.pack $ name n) <$> mapM (convertM onVar onWild) args
+      ConP n [] | name n == "[]" -> return $ PCon "Nil" []
+      ConP n args -> PCon (T.pack $ name n) <$> mapM (convertM onVar onWild) args
       VarP n -> return $ onVar (name n)
       WildP -> return onWild
       LitP l -> return . convLit $ l
       ParensP p -> convertM onVar onWild p
-      InfixP p1 (Name (OccName ":" ) (NameG DataName (PkgName "ghc-prim") (ModName "GHC.Types"))) p2 -> (\a b -> Con "Cons" [a,b]) <$> (convertM onVar onWild p1) <*> (convertM onVar onWild p2)
+      InfixP p1 (Name (OccName ":" ) (NameG DataName (PkgName "ghc-prim") (ModName "GHC.Types"))) p2 -> (\a b -> PCon "Cons" [a,b]) <$> (convertM onVar onWild p1) <*> (convertM onVar onWild p2)
       ListP ps -> convList <$> mapM (convertM onVar onWild) ps
-      TupP [p1,p2] -> (\a b -> Con "Tuple2" [a,b]) <$> (convertM onVar onWild p1) <*> (convertM onVar onWild p2)
-      TupP [p1,p2,p3] -> (\a b c -> Con "Tuple3" [a,b,c]) <$> (convertM onVar onWild p1) <*> (convertM onVar onWild p2) <*> (convertM onVar onWild p3)
-      TupP [p1,p2,p3,p4] -> (\a b c d -> Con "Tuple4" [a,b,c,d]) <$> (convertM onVar onWild p1) <*> (convertM onVar onWild p2) <*> (convertM onVar onWild p3) <*> (convertM onVar onWild p4)
+      TupP [p1,p2] -> (\a b -> PCon "Tuple2" [a,b]) <$> (convertM onVar onWild p1) <*> (convertM onVar onWild p2)
+      TupP [p1,p2,p3] -> (\a b c -> PCon "Tuple3" [a,b,c]) <$> (convertM onVar onWild p1) <*> (convertM onVar onWild p2) <*> (convertM onVar onWild p3)
+      TupP [p1,p2,p3,p4] -> (\a b c d -> PCon "Tuple4" [a,b,c,d]) <$> (convertM onVar onWild p1) <*> (convertM onVar onWild p2) <*> (convertM onVar onWild p3) <*> (convertM onVar onWild p4)
       p -> error . unwords $ ["Unsupported pattern",show p] -- pprint p,show p]
 
     name (Name (OccName n) _) = n
@@ -225,18 +225,18 @@ convertPattern onVar onWild p = runQ (p >>= convertM onVar onWild)
        IntegerL i -> valPattern i
        -- RationalL r -> valPattern r
 
-    convList [] = Con "Nil" []
-    convList (h:t) = Con "Cons" [h,convList t]
+    convList [] = PCon "Nil" []
+    convList (h:t) = PCon "Cons" [h,convList t]
 
 showPatt :: Pattern HVar -> String
-showPatt (Con n ps) = unwords ["Data.Pattern.Con",show n,"[",intercalate "," . map showPatt $ ps,"]"]
-showPatt (Var (V v)) = v -- concat ["val (",v,")"] -- showVar v
+showPatt (PCon n ps) = unwords ["Data.Pattern.Con",show n,"[",intercalate "," . map showPatt $ ps,"]"]
+showPatt (PVar (V v)) = v -- concat ["val (",v,")"] -- showVar v
  --showPatt (Var W) = "Var W" -- "WildCard" -- "WildCard" -- "_"
 showPatt p = show p -- show bs -- concat [Data.BitVector,show bs
 
-asExp (Con n ps) = AppE (AppE (c "Data.Pattern.Con") (LitE (StringL . T.unpack $ n))) (ListE (map asExp ps))
-asExp (Var (V v)) = VarE (mkName v)
-asExp (Var W) = AppE (c "Data.Pattern.Var") (c "W")
+asExp (PCon n ps) = AppE (AppE (c "Data.Pattern.Con") (LitE (StringL . T.unpack $ n))) (ListE (map asExp ps))
+asExp (PVar (V v)) = VarE (mkName v)
+asExp (PVar W) = AppE (c "Data.Pattern.Var") (c "W")
 
 c = ConE . mkName
 
@@ -247,15 +247,15 @@ onlyWildCards W = WildCard
 pattern2Match :: AbsoluteType -> Pattern WildCard -> Either String [Match AbsRef [Bool]]
 pattern2Match (AbsoluteType e t) pat = errs $ convert pat t
   where
-    convert (Con n ps) t =
+    convert (PCon n ps) t =
         let adt = solvedADT e t
         --in case consIn (T.unpack n) adt of
         in case consIn (fromText n) adt of
           Nothing -> [Left $ unwords ["Constructor '"++T.unpack n++"' not present in",prettyShow t]]
           Just (bs,ts) -> Right (MatchBits bs) : concatMap (uncurry convert) (zip ps ts)
     -- convert (Var WildCard) t = [Right $ MatchType $ solveF mdls t]
-    convert (Var WildCard) t = [Right $ MatchType t]
-    convert (Val bs) _ = [Right $ MatchBits bs]
+    convert (PVar WildCard) t = [Right $ MatchType t]
+    convert (PVal bs) _ = [Right $ MatchBits bs]
 
     errs r = if null (lefts r)
              then Right . optMatch . rights $ r
