@@ -108,22 +108,26 @@ For examples of stand-alone and www applications see:
 
 #### Installation
 
-It is not yet on [hackage](https://hackage.haskell.org/) but you can still use it in your [stack](https://docs.haskellstack.org/en/stable/README/) projects by adding a reference to its github location under the 'packages' section:
+It is not yet on [hackage](https://hackage.haskell.org/) but you can use it in your [stack](https://docs.haskellstack.org/en/stable/README/) projects by adding in the `stack.yaml` file, under the `packages` section:
 
 ````
-packages:
 - location:
    git: https://github.com/tittoassini/top
-   commit: 33ac741
+   commit: 26f380d687c673bbdab6b892db2dce0bbeea1fb7
+  extra-dep: true
 - location:
-   git: https://github.com/tittoassini/typed
-   commit: 5cb0f72
+    git: https://github.com/tittoassini/typed
+    commit: 3d797cf4a7b8d519aff568abff5a3fc1d86aee93
+  extra-dep: true
 - location:
    git: https://github.com/tittoassini/flat
-   commit: 3ae580d
+   commit: 3771f5946dd506c6f199aa4047186d5b57bdce5f
+  extra-dep: true
 - location:
    git: https://github.com/tittoassini/model
-   commit: 0e1fe4f
+   commit: b05a56a993213271e3b13d28a5e8bb90c9d8576f
+  extra-dep: true
+
 ````
 
 #### Compatibility
