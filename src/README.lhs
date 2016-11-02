@@ -103,7 +103,6 @@ It is not yet on [hackage](https://hackage.haskell.org/) but you can use it in y
    git: https://github.com/tittoassini/model
    commit: b05a56a993213271e3b13d28a5e8bb90c9d8576f
   extra-dep: true
-
 ````
 
  #### Compatibility

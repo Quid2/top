@@ -6,7 +6,7 @@
 module Network.Top.Types(
   module Data.Typed
   ,Config(..),cfgIP,cfgPort,cfgPath
-  ,Connection(..),App--,WSConnection(..),WSApp
+  ,Connection(..),inputWithTimeout,App--,WSConnection(..),WSApp
   ,WSConnection,WSApp
   ,def
   ,ByType(..)
@@ -27,6 +27,8 @@ import           Data.Typed
 import           Data.Word
 -- import qualified Network.WebSockets     as WS
 import           Data.Text.Encoding
+import           System.Timeout
+import Network.Top.Util
 
 -- |General client configuration (ip,port and path of the Top access point)
 -- data Config = Config {ip::String,port::Int,path::String}
@@ -77,6 +79,9 @@ data Connection a = Connection {
    ,close :: IO ()
  }
 
+-- NOTE: In case of timeout, this will cause the connection to close as well.
+inputWithTimeout :: Int -> Connection a -> IO (Maybe a)
+inputWithTimeout secs conn = timeout (seconds secs) (input conn)
 
 -- instance Invariant Conn where
 --   invmap _ _ ConnOpening = ConnOpening
@@ -124,6 +129,8 @@ instance Model a =>  Model (ByType a)
 data ByPattern a = ByPattern (Pattern WildCard) deriving (Eq, Ord, Show, Generic, Flat)
 
 instance Model a => Model (ByPattern a)
+
+-- byPattern pat = ByPattern (patternQ pat)
 
 data ChannelSelectionResult addr =
   -- |The channel has been permanently setup to the requested protocol

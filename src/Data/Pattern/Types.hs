@@ -75,7 +75,7 @@ envPattern :: AbsoluteType -> Pattern WildCard -> Either String PatternMatcher
 envPattern at pat = (matchTree at,) <$> pattern2Match at pat
 
 mapPM :: ([Bool] -> b) -> PatternMatcher -> (TypeMatchers,[Match AbsRef b])
-mapPM f = second ((f <$>) <$>) 
+mapPM f = second ((f <$>) <$>)
 
 bitSplit8 [] = []
 bitSplit8 bs =

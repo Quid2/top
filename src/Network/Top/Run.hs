@@ -56,7 +56,7 @@ runClient_ cfg routerBin app = run cfg 1
       case res of
         Left cfg' -> run cfg' (n+1)
         Right r -> return r
-    errIn msg = dbgS msg >> error msg
+    errIn msg = dbg ["Failure",msg] >> error msg
 
 -- |Send a value on a typed connection
 send :: (Show a,Flat a) => WSConnection -> a -> IO ()

@@ -15,7 +15,7 @@ module Network.Top.Util(
   ,module X
 #endif
   ,eitherToMaybe,isRight
-  ,liftIO,forever,when,unless,try,tryE,forceE,SomeException
+  ,liftIO,forever,when,unless,strictTry,try,tryE,forceE,SomeException
   ,async,cancel
   ,threadDelay,milliseconds,seconds,minutes
   ) where
@@ -26,6 +26,8 @@ import           Control.Exception         (SomeException, try)
 import           Control.Monad
 import           Control.Monad.IO.Class
 import           GHC.IO.Handle             (Handle)
+import Control.DeepSeq
+import qualified Control.Exception as E 
 
 #ifdef ghcjs_HOST_OS
 -- GHC-JS Version
@@ -125,3 +127,5 @@ seconds = (* 1000000)
 milliseconds :: Num a => a -> a
 milliseconds = (* 1000)
 
+strictTry :: NFData a => IO a -> IO (Either E.SomeException a)
+strictTry op = E.catch (op >>= \v -> return . Right $! deepseq v v) (\(err:: E.SomeException) -> return . Left $ err)
