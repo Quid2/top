@@ -14,7 +14,7 @@ module Network.Top.Util(
   ,logLevelOut
   ,module X
 #endif
-  ,eitherToMaybe,isRight
+  ,eitherToMaybe--,isRight
   ,liftIO,forever,when,unless,strictTry,try,tryE,forceE,SomeException
   ,async,cancel
   ,threadDelay,milliseconds,seconds,minutes
@@ -114,9 +114,9 @@ eitherToMaybe :: Either t a -> Maybe a
 eitherToMaybe (Right a) = Just a
 eitherToMaybe (Left _) = Nothing
 
-isRight :: Either t t1 -> Bool
-isRight (Right _) = True
-isRight _ = False
+--isRight :: Either t t1 -> Bool
+-- isRight (Right _) = True
+-- isRight _ = False
 
 minutes :: Num c => c -> c
 minutes = seconds . (60*)

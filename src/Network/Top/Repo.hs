@@ -21,6 +21,7 @@ import Control.Monad
 
 -- t = t1 >> t2
 x = recordType def (Proxy::Proxy RepoProtocol)
+-- y = recordType def (Proxy::Proxy AbsADT)
    -- solve (Proxy::Proxy Repo)
    -- let local = def {ip="127.0.0.1",port=8080}
 

@@ -244,7 +244,7 @@ testClients cls = do
     where
       client count numDevices n (r,act) = r $ \conn -> do
           -- make sure all clients are connected or we will miss some messages.
-          
+
           atomically $ modifyTVar' count (+1)
           waitAllStarted -- Are these actually all started? Apparently not
           --dbgS "All Started"
@@ -312,3 +312,4 @@ instance Flat Content
 instance Model Msg
 instance Model Subject
 instance Model Content
+
