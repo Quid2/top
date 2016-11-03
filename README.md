@@ -113,7 +113,7 @@ It is not yet on [hackage](https://hackage.haskell.org/) but you can use it in y
 ````
 - location:
    git: https://github.com/tittoassini/top
-   commit: 5511d824af7f1c197e97996a25f33afcd845513a
+   commit: 5c2f9181da9b36d05a16a997cbad56c057789cb9
   extra-dep: true
 - location:
     git: https://github.com/tittoassini/typed
