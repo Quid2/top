@@ -10,6 +10,7 @@ module Network.Top.Types(
   ,WSConnection,WSApp
   ,def
   ,ByType(..)
+  ,ByAny,byAny
   ,Echo(..)
   ,ByPattern(..),L.ByteString,ChannelSelectionResult(..),WebSocketAddress(..),SocketAddress(..),IP4Address(..),IP6Address
 --  ,module Data.Pattern
@@ -129,6 +130,15 @@ instance Model a =>  Model (ByType a)
 data ByPattern a = ByPattern (Pattern WildCard) deriving (Eq, Ord, Show, Generic, Flat)
 
 instance Model a => Model (ByPattern a)
+
+-- byPattern pat = 
+
+byAny = ByAny :: ByAny TypedBLOB
+
+-- The type parameter indicates the type used to return the values (for example:TypedBLOB)
+data ByAny a = ByAny deriving (Eq, Ord, Show, Generic, Flat)
+
+instance Model a =>  Model (ByAny a)
 
 -- byPattern pat = ByPattern (patternQ pat)
 

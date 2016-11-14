@@ -2,7 +2,7 @@
 {-# LANGUAGE OverloadedStrings         #-}
 {-# LANGUAGE ScopedTypeVariables       #-}
 {-# LANGUAGE DeriveGeneric ,StandaloneDeriving #-}
-{-# LANGUAGE TemplateHaskell    ,TupleSections       #-}
+{-# LANGUAGE TemplateHaskell    ,TupleSections  ,GADTs  #-}
 import Control.Monad
 import           Control.Applicative
 import           Control.Exception             (SomeException, catch, handle,fromException)
@@ -16,7 +16,7 @@ import  qualified Network.WebSockets as WS
 import           Network.WebSockets.Connection(sendCloseCode)
 import Control.Concurrent.Async
 import  Control.Concurrent.STM
-import Data.Word
+import           Data.Word
 import Data.Maybe
 import Data.Either
 import Data.Pattern.Types
@@ -32,6 +32,7 @@ import System.Time.Extra(duration,showDuration)
 
 deriving instance Eq (WS.ConnectionException)
 
+-- main = recordType def (Proxy::Proxy Msg)
 main = mainTest
 --main = mainRepo
 
@@ -78,6 +79,15 @@ mainTest = do
                                 ,([p|Msg _ (Subject ("Haskell":_:[])) _|],1)
                                 ] msgs
 
+    [pwild,p1,p2,p3,p4,p5] <- mapM patternQ [
+      [p|_|]
+      ,[p|Msg "sj" _ _|]
+      ,[p|Msg "sj" _ Join|]
+      ,[p|Msg _ _ Join|]
+      ,[p|Msg _ (Subject ("Haskell":[])) _|]
+      ,[p|Msg _ (Subject ("Haskell":_:[])) _|]
+      ]
+
     let mixTest0 = byMixedTest False 2500 [
           (Nothing,0) -- this sends so it receives nothing
           ,(Just [p|_|],4)
@@ -95,6 +105,19 @@ mainTest = do
           ,(Nothing,4)
           ] msgs
 
+    let mixAllTest = connTests [
+          mix byAny [typedBLOB 'a',typedBLOB 'b'] 9
+         ,mix byAny [] 11
+         ,mix ByType msgs 0
+         ,mix ByType [True,False,True] 2
+         ,mix ByType ([False,True]) 3
+         ,mix (ByPattern p1) ([]::[Msg]) 2
+         ,mix (ByPattern pwild) ([]::[Bool]) 5
+         ,mix (ByPattern pwild) ([]::[Msg]) 4
+         ,mix ByType ([]::[Char]) 2
+         ,mix (ByPattern pwild) ([]::[Char]) 2
+         ]
+
     let patTest2 = byPatternTest [([p|_|],0) -- this sends so it receives nothing
                                  ,([p|_|],3)
                                  ,([p|True:_|],2)
@@ -109,7 +132,8 @@ mainTest = do
 
                                  -- patTest,patTest2
                                  --,typTest,typTest2
-                                 mixTest
+                                 -- mixTest
+                                 mixAllTest
                                  ]
     -- r <- (\(ls,rs) -> catMaybes $ map (const $ Just "Interrupted Test") ls ++ map (\r -> if r then Nothing else Just "Failed Test") rs) . partitionEithers <$> mapM waitCatch tasks
 
@@ -188,6 +212,21 @@ mainTest = do
 --byTypeSimpleTest :: IO [Async ()]
 -- byTypeSimpleTest = (:[]) <$> (run (ByType::ByType Char) (\conn -> mapM_ (output conn) ['a'..'c'] >> threadDelay (seconds 10)))
 
+mix r msgs numAnswers = ConnTst (run r) act
+  where
+    act _ conn = do
+      mapM_ (output conn) msgs
+      checkNumInputs True numAnswers conn
+
+-- byMixedAllTest cs = do
+--    testClients $ map (\ -> (conn,perClient (out conn msgs) numAnswers)) cs
+--   where
+--     act msgs multiplier n conn =
+--       mapM_ (output conn) (concat $ replicate multiplier msgs)
+--     perClient (ch,msgs,numAnswers)act numAnswers conn = do
+--       act
+--       checkNumInputs precise (numAnswers*multiplier) conn
+
 byMixedTest precise multiplier hs msgs = do
    clts <- mapM (\(mp,num) -> let n = num * multiplier
                               in case mp of
@@ -199,6 +238,7 @@ byMixedTest precise multiplier hs msgs = do
     perClient numAnswers n conn = do
       when (n==0) $ mapM_ (output conn) (concat $ replicate multiplier msgs)
       checkNumInputs precise numAnswers conn
+
 
 byPatternTest ::  (Model a,Typed a,Flat a,Show a,Foldable t,Show (t a)) => [(PatQ, Int)] -> t a -> IO [Async Bool]
 byPatternTest hpats msgs = do
@@ -237,12 +277,17 @@ inputTimeout secs conn = do
     dbg ["inputTimeout",show after]
     return after
 
-testClients cls = do
+data ConnTst = forall a. ConnTst (App a Bool -> IO (Async Bool)) (Int -> Connection a -> IO Bool)
+
+testClients = connTests . map (\(r,a)-> ConnTst r a)
+
+connTests :: [ConnTst] -> IO [Async Bool]
+connTests cls = do
   count <- newTVarIO 0
   let numDevices = length cls
   mapM (\(n,c) -> client count numDevices n c) . zip [0..] $ cls
     where
-      client count numDevices n (r,act) = r $ \conn -> do
+      client count numDevices n (ConnTst r act) = r $ \conn -> do
           -- make sure all clients are connected or we will miss some messages.
 
           atomically $ modifyTVar' count (+1)
@@ -250,7 +295,7 @@ testClients cls = do
           --dbgS "All Started"
           r <- act n conn
           dbg ["Result",show r]
-          --threadDelay (secs 30)
+          threadDelay (secs 10)
           return r
             where
             waitAllStarted = do
@@ -259,11 +304,40 @@ testClients cls = do
                 then threadDelay 100 >> waitAllStarted
                 else return ()
 
+-- testClients
+--   :: (Enum t, Num t, Show b1) =>
+--      [((t1 -> IO b1) -> IO b, t -> t1 -> IO b1)] -> IO [b]
+-- testClients cls = do
+--   count <- newTVarIO 0
+--   let numDevices = length cls
+--   mapM (\(n,c) -> client count numDevices n c) . zip [0..] $ cls
+--     where
+--       client count numDevices n (r,act) = r $ \conn -> do
+--           -- make sure all clients are connected or we will miss some messages.
+
+--           atomically $ modifyTVar' count (+1)
+--           waitAllStarted -- Are these actually all started? Apparently not
+--           --dbgS "All Started"
+--           r <- act n conn
+--           dbg ["Result",show r]
+--           -- threadDelay (secs 30)
+--           return r
+--             where
+--             waitAllStarted = do
+--               c <- atomically $ readTVar count
+--               if c < numDevices
+--                 then threadDelay 100 >> waitAllStarted
+--                 else return ()
+
 -- waitCatchExceptClose task = exp <$> waitCatch task
 --   where
 --     exp (Left e) | fromException e == Just WS.ConnectionClosed = Right True
 --     exp e = e
 
+run
+  :: (Show a, Show a1, Show (router a1), Model (router a1), Flat a1,
+      Flat (router a1)) =>
+     router a1 -> App a1 a -> IO (Async a)
 run router app = async $ do
 -- run router app = do
    let cfg = def
