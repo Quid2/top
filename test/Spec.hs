@@ -24,8 +24,8 @@ import Language.Haskell.TH
 import System.IO
 import Data.List
 import Data.IORef
-import Repo.DB
-import Repo.Types
+import Repo.Disk 
+import qualified Repo.Types as R
 import Network.Top.Repo
 import System.Time.Extra(duration,showDuration)
 
@@ -42,21 +42,12 @@ mainRepo = do
   --recordType def (Proxy::Proxy Msg)
 
   -- Local type repo
-  db <- openDB "/tmp"
-  let dbRepo = Repo {get = \ref -> do
-                        mr <- getDB db ref
-                        --print (unwords ["get",show ref,show mr])
-                        print (unwords ["get",show ref,show $ isJust mr])
-                        return mr
-                    ,put = \adt -> do
-                        print (unwords ["put",prettyShow adt])
-                        putDB db (refS adt) adt
-                    }
-
-  er <- solveProxy dbRepo def (Proxy::Proxy Msg) -- AbsADT) --  [Bool])
+  repo <- dbRepo "/tmp"
+  er <- solveProxy repo def (Proxy::Proxy Msg) -- AbsADT) --  [Bool])
   case er of
     Left err -> print "Failed" >> error (err)
     Right r -> putStrLn $ prettyShow r
+  R.close repo
 
 -- TODO: test by sending incorrect router value
 mainTest = do

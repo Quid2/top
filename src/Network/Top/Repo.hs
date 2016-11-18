@@ -1,7 +1,7 @@
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 module Network.Top.Repo(recordType
-                       -- ,solveProxy
+                       ,solveProxy
                        ,solveType
                        ,knownTypes) where
 import qualified Data.Map          as M
