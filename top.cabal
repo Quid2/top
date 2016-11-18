@@ -14,19 +14,19 @@ cabal-version:       >=1.10
 
 library
   hs-source-dirs:      src
-  exposed-modules:     Data.Pattern.Types,Model.Report,Model.Report.Util,Network.Top,Network.Top.Pipes,Network.Top.Repo,Network.Top.Types,Network.Top.Run,Network.Top.Util,Network.Top.WebSockets,Repo.Types,Data.Time.Util
-  build-depends:       async, base >= 4.7 && < 5, bytestring, data-default-class, flat, template-haskell, pipes, transformers, typed, text, stm,invariant,ListLike,containers,mtl,deepseq,extra,time
+  exposed-modules:     Data.Pattern.Types,Model.Report,Model.Report.Util,Network.Top,Network.Top.Pipes,Network.Top.Repo,Network.Top.Types,Network.Top.Run,Network.Top.Util,Network.Top.WebSockets,Repo.Types,Repo.Disk,Repo.Memory,Data.Time.Util
+  build-depends:       async, base >= 4.7 && < 5, bytestring, data-default-class, flat, template-haskell, pipes, transformers, typed, text, stm,invariant,ListLike,containers,mtl,deepseq,extra,time,th-lift
 
   if impl(ghcjs)
     build-depends:     ghcjs-base        >= 0.2 && < 0.3
   else
-    exposed-modules: Repo.DB    
+    exposed-modules: Repo.DB   
     build-depends:    websockets,hslogger,acid-state,safecopy,filepath
   default-language:    Haskell2010
 
 test-suite top-test
   type:                exitcode-stdio-1.0
--- executable top-test
+  -- executable top-test
   hs-source-dirs:      test
   main-is:             Spec.hs
   build-depends:       base,typed,hslogger,bytestring,websockets,async >= 2.1.0,stm,top,template-haskell,extra

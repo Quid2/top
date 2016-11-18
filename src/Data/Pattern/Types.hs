@@ -1,3 +1,4 @@
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE DeriveFoldable    #-}
 {-# LANGUAGE DeriveFunctor     #-}
 {-# LANGUAGE DeriveGeneric     #-}
@@ -6,12 +7,12 @@
 {-# LANGUAGE TupleSections     #-}
 module Data.Pattern.Types(
   Pattern(..),WildCard(..),showPatt
-  ,patternQ,filterPatternQ,prefixPattern,onlyWildCards,HVar(..)
+  ,patternQ,asPattern,asPattern_,filterPatternQ,prefixPattern,onlyWildCards,HVar(..)
   ,Q,Pat,Match(..),pattern2Match,Matcher,envPattern,PatternMatcher,BitMask(..),andMask,MatchError(..),boolsSplit,bitSplit,mapPM,asMSBits,asLSBits,littleEndian16
   ) where
 
-import Data.Bits
 import           Data.Bifunctor
+import           Data.Bits
 import qualified Data.ByteString            as B
 import           Data.Either
 import qualified Data.Flat.Bits             as V
@@ -23,6 +24,8 @@ import qualified Data.Text                  as T
 import           Data.Typed                 hiding (Con, Name, Val, Var)
 import           Language.Haskell.TH        hiding (Match, Type)
 import           Language.Haskell.TH.Syntax hiding (Match, Type)
+import Language.Haskell.TH.Lift
+
 {-
 Alternative coding more? efficient to check for validity of values (not really)
 
@@ -141,7 +144,7 @@ optMatch [] = []
 data Pattern v =
   -- |A constructor
   PCon
-  T.Text         -- ^Name of the constructor (e.g. "True")
+  String -- T.Text         -- ^Name of the constructor (e.g. "True")
   [Pattern v]  -- ^Patterns for the parameters
 
   | PVar v      -- A variable
@@ -178,7 +181,7 @@ valPattern = PVal . V.bools
 -- \subject -> Con ... v1
 filterPatternQ :: Quasi m => Q Pat -> m Exp
 filterPatternQ patq = do
-     p <- convertPattern (PVar . V) (PVar W) patq
+     p <- runQ $ convertPattern (PVar . V) (PVar W) patq
       -- print $ pmatch p --
      let vars = map (\(V v) -> v) . filter isVar $ toList p
      -- TODO: when done, remove haskell-src-meta
@@ -192,19 +195,29 @@ isVar (V _) = True
 isVar _ = False
 
 patternQ :: Quasi m => Q Pat -> m (Pattern WildCard)
-patternQ = convertPattern (\n -> error $ unwords ["Variables are not allowed in patterns, use wildcards (_) only, found:",n]) (PVar WildCard)
+--patternQ = convertPatternM (\n -> error $ unwords ["Variables are not allowed in patterns, use wildcards (_) only, found:",n]) (PVar WildCard)
+patternQ = runQ . asPattern_
+
+asPattern :: Q Pat -> Q Language.Haskell.TH.Syntax.Exp
+asPattern pat = asPattern_  pat >>= lift
+
+asPattern_ :: Monad m => m Pat -> m (Pattern WildCard)
+asPattern_ pat = convertPattern (\n -> error $ unwords ["Variables are not allowed in patterns, use wildcards (_) only, found:",n]) (PVar WildCard) pat
 
 -- Literals are converted to their flat representation (alternative: use proper definition?)
 -- Anything else as a nested named pattern
 -- convertPattern :: Quasi m => Q Pat -> m (Pattern String)
-convertPattern
-  :: Quasi m =>
-     (String -> Pattern v) -> Pattern v -> Q Pat -> m (Pattern v)
-convertPattern onVar onWild p = runQ (p >>= convertM onVar onWild)
+-- convertPatternM
+--   :: Quasi m =>
+--      (String -> Pattern v) -> Pattern v -> Q Pat -> m (Pattern v)
+-- -- convertPattern onVar onWild p = runQ (p >>= convertM onVar onWild)
+-- convertPatternM onVar onWild p = runQ (convertPattern_ onVar onWild p)
+
+convertPattern onVar onWild p = p >>= convertM onVar onWild
   where
     convertM onVar onWild pat = case pat of
       ConP n [] | name n == "[]" -> return $ PCon "Nil" []
-      ConP n args -> PCon (T.pack $ name n) <$> mapM (convertM onVar onWild) args
+      ConP n args -> PCon (name n) <$> mapM (convertM onVar onWild) args
       VarP n -> return $ onVar (name n)
       WildP -> return onWild
       LitP l -> return . convLit $ l
@@ -234,7 +247,7 @@ showPatt (PVar (V v)) = v -- concat ["val (",v,")"] -- showVar v
  --showPatt (Var W) = "Var W" -- "WildCard" -- "WildCard" -- "_"
 showPatt p = show p -- show bs -- concat [Data.BitVector,show bs
 
-asExp (PCon n ps) = AppE (AppE (c "Data.Pattern.Con") (LitE (StringL . T.unpack $ n))) (ListE (map asExp ps))
+asExp (PCon n ps) = AppE (AppE (c "Data.Pattern.Con") (LitE (StringL n))) (ListE (map asExp ps))
 asExp (PVar (V v)) = VarE (mkName v)
 asExp (PVar W) = AppE (c "Data.Pattern.Var") (c "W")
 
@@ -250,8 +263,8 @@ pattern2Match (AbsoluteType e t) pat = errs $ convert pat t
     convert (PCon n ps) t =
         let adt = solvedADT e t
         --in case consIn (T.unpack n) adt of
-        in case consIn (fromText n) adt of
-          Nothing -> [Left $ unwords ["Constructor '"++T.unpack n++"' not present in",prettyShow t]]
+        in case consIn (L.fromString n) adt of
+          Nothing -> [Left $ unwords ["Constructor '"++ n++"' not present in",prettyShow t]]
           Just (bs,ts) -> Right (MatchBits bs) : concatMap (uncurry convert) (zip ps ts)
     -- convert (Var WildCard) t = [Right $ MatchType $ solveF mdls t]
     convert (PVar WildCard) t = [Right $ MatchType t]
@@ -261,4 +274,9 @@ pattern2Match (AbsoluteType e t) pat = errs $ convert pat t
              then Right . optMatch . rights $ r
              else Left (unlines $ lefts r)
 
-fromText = L.fromString . T.unpack
+-- fromText = L.fromString . T.unpack
+
+-- NOTE: can be replaced by LANGUAGE DeriveLift with ghc >= 8
+deriveLift ''Pattern
+deriveLift ''WildCard
+

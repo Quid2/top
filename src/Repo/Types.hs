@@ -67,7 +67,8 @@ type RepoError = String -- SomeException -- String
 -- type CallBack = [Word8]
 
 data Repo = Repo {get::AbsRef -> IO (Maybe AbsADT)
-                 ,put::AbsADT -> IO ()}
+                 ,put::AbsADT -> IO ()
+                 ,close::IO ()}
 
 type RefSolver = AbsRef -> IO (Either RepoError AbsADT)
 

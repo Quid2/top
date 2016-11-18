@@ -1,3 +1,4 @@
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE DeriveAnyClass    #-}
 {-# LANGUAGE DeriveFoldable    #-}
 {-# LANGUAGE DeriveFunctor     #-}
@@ -10,9 +11,9 @@ module Network.Top.Types(
   ,WSConnection,WSApp
   ,def
   ,ByType(..)
-  ,ByAny,byAny
+  ,ByAny(..),byAny
   ,Echo(..)
-  ,ByPattern(..),L.ByteString,ChannelSelectionResult(..),WebSocketAddress(..),SocketAddress(..),IP4Address(..),IP6Address
+  ,ByPattern(..),byPattern,L.ByteString,ChannelSelectionResult(..),WebSocketAddress(..),SocketAddress(..),IP4Address(..),IP6Address
 --  ,module Data.Pattern
   ,chatsProtocol,chatsProtocolT,WSChannelResult
   ) where
@@ -30,6 +31,8 @@ import           Data.Word
 import           Data.Text.Encoding
 import           System.Timeout
 import Network.Top.Util
+import           Language.Haskell.TH.Syntax (lift)
+import Language.Haskell.TH.Lift
 
 -- |General client configuration (ip,port and path of the Top access point)
 -- data Config = Config {ip::String,port::Int,path::String}
@@ -131,7 +134,7 @@ data ByPattern a = ByPattern (Pattern WildCard) deriving (Eq, Ord, Show, Generic
 
 instance Model a => Model (ByPattern a)
 
--- byPattern pat = 
+byPattern pat = (ByPattern <$> asPattern_ pat) >>= lift
 
 byAny = ByAny :: ByAny TypedBLOB
 
@@ -139,8 +142,6 @@ byAny = ByAny :: ByAny TypedBLOB
 data ByAny a = ByAny deriving (Eq, Ord, Show, Generic, Flat)
 
 instance Model a =>  Model (ByAny a)
-
--- byPattern pat = ByPattern (patternQ pat)
 
 data ChannelSelectionResult addr =
   -- |The channel has been permanently setup to the requested protocol
@@ -191,3 +192,5 @@ data IP6Address = IP6Address Word16 Word16 Word16 Word16 Word16 Word16 Word16 Wo
 
 ptxt = txt . T.unpack
 
+-- NOTE: can be replaced by LANGUAGE DeriveLift with ghc >= 8
+deriveLift ''ByPattern

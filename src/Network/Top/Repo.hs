@@ -1,7 +1,8 @@
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 module Network.Top.Repo(recordType
-                       ,solveProxy,solveType
+                       -- ,solveProxy
+                       ,solveType
                        ,knownTypes) where
 import qualified Data.Map          as M
 import           Data.Maybe
@@ -26,7 +27,7 @@ x = recordType def (Proxy::Proxy RepoProtocol)
    -- let local = def {ip="127.0.0.1",port=8080}
 
 t1 = recordType def (Proxy::Proxy (ChannelSelectionResult (WebSocketAddress IP4Address))) -- Repo)
--- t2 = solveType def (Proxy::Proxy Char)
+-- t2 = solveProxy def (absType $ Proxy::Proxy Char)
 
 t3 = knownTypes def
 -- absADTs :: Model a => Proxy a -> [AbsADT]
@@ -37,10 +38,14 @@ recordType :: Model a => Config -> Proxy a -> IO ()
 recordType cfg proxy = runClient cfg ByType $ \conn -> mapM_ (output conn . Record) . absADTs $ proxy
 
 solveProxy :: Model a => Repo -> Config -> Proxy a -> IO (Either RepoError [(AbsRef,AbsADT)])
-solveProxy repo cfg = solveType repo cfg . absType
+solveProxy repo cfg = solveType_ repo cfg . absType
 
-solveType :: Repo -> Config -> AbsType -> IO (Either RepoError [(AbsRef,AbsADT)])
-solveType repo cfg t = (solveRefsRec repo (resolveRef cfg )) (references t)
+solveType repo cfg t = ((\env -> AbsoluteType (M.fromList env) t) <$>) <$> solveType_ repo cfg t
+
+solveType_ :: Repo -> Config -> AbsType -> IO (Either RepoError [(AbsRef,AbsADT)])
+-- solveType_ repo cfg t = (solveRefsRec repo (resolveRef cfg )) (references t)
+
+solveType_ repo cfg t = runClient cfg ByType $ \conn -> (solveRefsRec repo (resolveRef__ conn)) (references t)
 
 solveRefsRec :: Repo -> RefSolver -> [AbsRef] -> IO (Either RepoError [(AbsRef,AbsADT)])
 solveRefsRec repo solver [] = return $ Right []
@@ -73,8 +78,9 @@ resolveRef cfg ref = do
     Left exp -> Left (show exp)
     Right er -> er
 
-resolveRef_ cfg ref = runClient cfg ByType $ \conn -> do
+resolveRef_ cfg ref = runClient cfg ByType (flip resolveRef__ ref)
 
+resolveRef__ conn ref = do
     output conn (Solve ref)
 
     let loop = do
@@ -84,6 +90,7 @@ resolveRef_ cfg ref = runClient cfg ByType $ \conn -> do
             Solved sref sadt | ref == sref && refS sadt == sref -> return $ Right sadt
             _ -> loop
 
+    -- BUG: this returns an exception that is not captured
     fromMaybe (Left "Timeout") <$> timeout (seconds 30) loop
 
 

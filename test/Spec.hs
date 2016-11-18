@@ -29,12 +29,14 @@ import Repo.Types
 import Network.Top.Repo
 import System.Time.Extra(duration,showDuration)
 
-
 deriving instance Eq (WS.ConnectionException)
 
 -- main = recordType def (Proxy::Proxy Msg)
 main = mainTest
 --main = mainRepo
+-- t = runClient def (ByPattern $(patternQ2 [p|Msg "sj" _ Join|])) $ \conn -> print () 
+
+f (a,b) = (b,a)
 
 mainRepo = do
   --recordType def (Proxy::Proxy Msg)
