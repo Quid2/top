@@ -88,8 +88,8 @@ It is not yet on [hackage](https://hackage.haskell.org/) but you can use it in y
 
 ````
 - location:
-   git: https://github.com/tittoassini/top
-   commit: 5c2f9181da9b36d05a16a997cbad56c057789cb9
+    git: https://github.com/tittoassini/top
+    commit: 618fcab4c1bd87008f14ef1f199a5dee795f7045
   extra-dep: true
 - location:
     git: https://github.com/tittoassini/typed
