@@ -12,6 +12,7 @@ memRepo = do
         M.lookup ref <$> readIORef db
     ,R.put = \adt -> do
         --dbg (unwords ["put",prettyShow adt])
-        modifyIORef db $ M.insert (refS adt) adt
+        modifyIORef db $ M.insert (absRef adt) adt
     ,R.close = return ()
     }
+

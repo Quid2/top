@@ -16,6 +16,6 @@ dbRepo dir = do
             return mr
         ,R.put = \adt -> do
             --dbg ["put",prettyShow adt]
-            putDB db (refS adt) adt
+            putDB db (absRef adt) adt
         ,R.close = closeDB db
         }

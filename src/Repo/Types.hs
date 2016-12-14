@@ -72,4 +72,4 @@ data Repo = Repo {get::AbsRef -> IO (Maybe AbsADT)
 
 type RefSolver = AbsRef -> IO (Either RepoError AbsADT)
 
-type TypeSolver = AbsType -> IO (Either RepoError AbsoluteType)
+type TypeSolver = AbsType -> IO (Either RepoError AbsTypeModel)

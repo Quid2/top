@@ -1,76 +1,80 @@
+{-# LANGUAGE DeriveGeneric             #-}
+{-# LANGUAGE GADTs                     #-}
 {-# LANGUAGE NoMonomorphismRestriction #-}
 {-# LANGUAGE OverloadedStrings         #-}
 {-# LANGUAGE ScopedTypeVariables       #-}
-{-# LANGUAGE DeriveGeneric ,StandaloneDeriving #-}
-{-# LANGUAGE TemplateHaskell    ,TupleSections  ,GADTs  #-}
-import Control.Monad
+{-# LANGUAGE StandaloneDeriving        #-}
+{-# LANGUAGE TemplateHaskell           #-}
+{-# LANGUAGE TupleSections             #-}
 import           Control.Applicative
-import           Control.Exception             (SomeException, catch, handle,fromException)
-import           Data.Typed
-import qualified Data.ByteString.Lazy          as BL
-import           Data.Word                     (Word16)
-import           Network.Top
-import           System.Log.Logger
 import           Control.Concurrent            (threadDelay)
-import  qualified Network.WebSockets as WS
-import           Network.WebSockets.Connection(sendCloseCode)
-import Control.Concurrent.Async
-import  Control.Concurrent.STM
+import           Control.Concurrent.Async
+import           Control.Concurrent.STM
+import           Control.Exception             (SomeException, catch,
+                                                fromException, handle)
+import           Control.Monad
+import qualified Data.ByteString.Lazy          as BL
+import           Data.Either
+import           Data.IORef
+import           Data.List
+import           Data.Maybe
+import           Data.Pattern.TH
+import           Data.Pattern.Types
+import           Data.Typed
+import           Data.Word                     (Word16)
 import           Data.Word
-import Data.Maybe
-import Data.Either
-import Data.Pattern.Types
-import Language.Haskell.TH
-import System.IO
-import Data.List
-import Data.IORef
-import Repo.Disk 
-import qualified Repo.Types as R
-import Network.Top.Repo
-import System.Time.Extra(duration,showDuration)
+import           Language.Haskell.TH
+import           Network.Top
+import           Network.Top.Repo
+import qualified Network.WebSockets            as WS
+import           Network.WebSockets.Connection (sendCloseCode)
+-- import           Repo.Disk
+import Repo.Memory
+import qualified Repo.Types                    as R
+import           System.Exit                   (exitFailure)
+import           System.IO
+import           System.Log.Logger
+import           System.Time.Extra             (duration, showDuration)
+-- import           System.Posix.Temp
 
-deriving instance Eq (WS.ConnectionException)
+main = do
+  let dbgLevel = INFO
+  --let dbgLevel = DEBUG
+  -- updateGlobalLogger rootLoggerName $ setLevel dbgLevel
+  logLevelOut dbgLevel stdout
 
--- main = recordType def (Proxy::Proxy Msg)
-main = mainTest
---main = mainRepo
--- t = runClient def (ByPattern $(patternQ2 [p|Msg "sj" _ Join|])) $ \conn -> print () 
+  -- testRepo
+  mainTest
 
-f (a,b) = (b,a)
+t = runClient def $(byPattern [p|Msg "sj" _ Join|]) $ \conn -> do
+  msg::Msg <- input conn
+  print msg
 
-mainRepo = do
-  --recordType def (Proxy::Proxy Msg)
-
+testRepo = do
   -- Local type repo
-  repo <- dbRepo "/tmp"
-  er <- solveProxy repo def (Proxy::Proxy Msg) -- AbsADT) --  [Bool])
-  case er of
-    Left err -> print "Failed" >> error (err)
-    Right r -> putStrLn $ prettyShow r
+  -- repo <- dbRepo "/tmp"
+  repo <- memRepo
+  let tm = absTypeModel (Proxy::Proxy AbsADT)
+  r <- ((tm ==) <$>) <$> solveType repo def (typeName tm)
   R.close repo
+  return r
+
+showInfo = do
+  --recordType def (Proxy::Proxy Msg)
+  -- recordType def (Proxy::Proxy R.RepoProtocol)
+  -- recordType def (Proxy::Proxy (ChannelSelectionResult (WebSocketAddress IP4Address))) -- Repo)
+  knownTypes def
+
+  -- exitFailure
 
 -- TODO: test by sending incorrect router value
 mainTest = do
-    let dbgLevel = INFO -- DEBUG
-    -- updateGlobalLogger rootLoggerName $ setLevel dbgLevel
-    logLevelOut dbgLevel stdout
-
-    --recordType def (Proxy::Proxy Msg)
 
     let msgs = [Msg "rob" (Subject ["Joke"]) Join
                ,Msg "sj" (Subject ["Haskell"]) Join
                ,Msg "sj" (Subject ["Haskell"]) (TextMsg "All hail the boss!")
                ,Msg "titto" (Subject ["Haskell","General"]) (TextMsg "Nice language!")
                ]
-
-    let patTest = byPatternTest [([p|_|],0) -- this sends so it receives nothing
-                                ,([p|_|],4)
-                                ,([p|Msg "sj" _ _|],2)
-                                ,([p|Msg "sj" _ Join|],1)
-                                ,([p|Msg _ _ Join|],2)
-                                ,([p|Msg _ (Subject ("Haskell":[])) _|],2)
-                                ,([p|Msg _ (Subject ("Haskell":_:[])) _|],1)
-                                ] msgs
 
     [pwild,p1,p2,p3,p4,p5] <- mapM patternQ [
       [p|_|]
@@ -103,7 +107,7 @@ mainTest = do
          ,mix byAny [] 11
          ,mix ByType msgs 0
          ,mix ByType [True,False,True] 2
-         ,mix ByType ([False,True]) 3
+         ,mix ByType [False,True] 3
          ,mix (ByPattern p1) ([]::[Msg]) 2
          ,mix (ByPattern pwild) ([]::[Bool]) 5
          ,mix (ByPattern pwild) ([]::[Msg]) 4
@@ -111,32 +115,29 @@ mainTest = do
          ,mix (ByPattern pwild) ([]::[Char]) 2
          ]
 
+    let patTest = byPatternTest [([p|_|],0) -- this sends so it receives nothing
+                                ,([p|_|],4)
+                                ,([p|Msg "sj" _ _|],2)
+                                ,([p|Msg "sj" _ Join|],1)
+                                ,([p|Msg _ _ Join|],2)
+                                ,([p|Msg _ (Subject ("Haskell":[])) _|],2)
+                                ,([p|Msg _ (Subject ("Haskell":_:[])) _|],1)
+                                ] msgs
+
     let patTest2 = byPatternTest [([p|_|],0) -- this sends so it receives nothing
                                  ,([p|_|],3)
                                  ,([p|True:_|],2)
                                  ]
                    [[True,False,True],[False,False,True],[True,True]]
 
-    let typTest = byTypeTest [TextMsg "ciao",Join,TextMsg "ok"] 3
-    let typTest2 = byTypeTest [False,True,False,True] 5
-    tasks <- concat <$> sequence [--wsTest
-                                 -- byTypeSimpleTest
-                                 --byTypeTest [True,False,True] 2,
-
-                                 -- patTest,patTest2
-                                 --,typTest,typTest2
-                                 -- mixTest
-                                 mixAllTest
-                                 ]
-    -- r <- (\(ls,rs) -> catMaybes $ map (const $ Just "Interrupted Test") ls ++ map (\r -> if r then Nothing else Just "Failed Test") rs) . partitionEithers <$> mapM waitCatch tasks
-
-    let runTask = waitCatch
-    -- let runTask =
-
-    (tr,r) <- duration ((\(ls,rs) -> catMaybes $ map (Just . show) ls ++ map (\r -> if r then Nothing else Just "Failed Test") rs) . partitionEithers <$> mapM runTask tasks)
-
-    print $ if null r then "No Test Errors" else "Test Errors: " ++ intercalate " -- " r
-    print $ showDuration tr
+    mapM_ perform [--wsTest
+      byTypeTest [TextMsg "ciao",Join,TextMsg "ok"] 3
+      ,byTypeTest [False,True,False,True] 5
+      ,mixTest
+      ,mixAllTest
+      ,patTest
+      ,patTest2
+      ]
 
     -- -- let numDeviceMsgs bS= 3
     -- -- m <- run $ master numDevices numDeviceMsgs
@@ -144,6 +145,13 @@ mainTest = do
     -- -- let t2 = m:devices
 
   where
+
+    perform mtasks = do
+      tasks <- mtasks
+      (tr,r) <- duration ((\(ls,rs) -> catMaybes $ map (Just . show) ls ++ map (\r -> if r then Nothing else Just "Failed Test") rs) . partitionEithers <$> mapM waitCatch tasks)
+
+      print $ if null r then "No Test Errors" else "Test Errors: " ++ intercalate " -- " r
+      print $ showDuration tr
 
     msg1 = [1..40]
 
@@ -219,17 +227,18 @@ mix r msgs numAnswers = ConnTst (run r) act
 --     perClient (ch,msgs,numAnswers)act numAnswers conn = do
 --       act
 --       checkNumInputs precise (numAnswers*multiplier) conn
-
 byMixedTest precise multiplier hs msgs = do
-   clts <- mapM (\(mp,num) -> let n = num * multiplier
-                              in case mp of
-                                   Nothing -> return (run $ ByType,perClient n)
-                                   Just p -> (\pat -> (run $ ByPattern pat,perClient n)) <$> patternQ p
-                ) hs
-   testClients clts
+  clts <- mapM
+            (\(mp, num) -> let n = num * multiplier
+                           in case mp of
+                             Nothing -> return (run $ ByType, perClient n)
+                             Just p  -> (\pat -> (run $ ByPattern pat, perClient n)) <$> patternQ p)
+            hs
+  testClients clts
+
   where
     perClient numAnswers n conn = do
-      when (n==0) $ mapM_ (output conn) (concat $ replicate multiplier msgs)
+      when (n == 0) $ mapM_ (output conn) (concat $ replicate multiplier msgs)
       checkNumInputs precise numAnswers conn
 
 
@@ -244,6 +253,7 @@ byPatternTest hpats msgs = do
           when (n==0) $ mapM_ (output conn) msgs
           chkNumInputs numAnswers conn
 
+-- Each actor sends the same messages and should receive all those sent minus those sent by itself.
 byTypeTest :: (Model a,Typed a,Flat a,Show a) => [a] -> Int -> IO [Async Bool]
 byTypeTest msgs numDevices = do
   let numInMsgs = (numDevices-1)*length msgs
@@ -259,28 +269,35 @@ checkNumInputs precise numAnswers conn = do
   -- WHY OH WHY? if inputWithTimeout returns a timeout, a ConnectionClosed exception is thrown after this returns
   -- after <- inputWithTimeout 3 conn
   -- So we do this way instead, we let the input continue undisturbed and we do not get an exception:
-  after <- if precise then inputTimeout 3 conn else return Nothing
+  after <- if precise then inputTimeout 5 conn else return Nothing
   return $ allIn && isNothing after
 
--- BUG: this leaves hanging threads
+inputTimeout :: Show a => Int -> Connection a -> IO (Maybe a)
 inputTimeout secs conn = do
     t1 <- async $ input conn
     t2 <- async $ threadDelay (seconds secs)
-    after <- either Just (const Nothing) <$> waitEither t1 t2
+    -- cannot cancel or we get a ConnectionClosed error so we have to leave threads running
+    --after <- either (either (const Nothing) Just) (const Nothing) <$> waitEitherCatchCancel t1 t2
+    after <- either (either (const Nothing) Just) (const Nothing) <$> waitEitherCatch t1 t2
     dbg ["inputTimeout",show after]
     return after
 
-data ConnTst = forall a. ConnTst (App a Bool -> IO (Async Bool)) (Int -> Connection a -> IO Bool)
+-- |A connection test
+data ConnTst = forall a.
+                           ConnTst
+                             { tstStart :: App a Bool -> IO (Async Bool)
+                             , tstBody :: Int -> Connection a -> IO Bool
+                             }
 
-testClients = connTests . map (\(r,a)-> ConnTst r a)
+testClients = connTests . map (uncurry ConnTst)
 
+-- |Start all tests, when all have completed the start up/connection phase run them in parallel
 connTests :: [ConnTst] -> IO [Async Bool]
 connTests cls = do
-  count <- newTVarIO 0
-  let numDevices = length cls
-  mapM (\(n,c) -> client count numDevices n c) . zip [0..] $ cls
+  numStarted <- newTVarIO 0
+  zipWithM (client numStarted) [0..] cls
     where
-      client count numDevices n (ConnTst r act) = r $ \conn -> do
+      client count n (ConnTst start act) = start $ \conn -> do
           -- make sure all clients are connected or we will miss some messages.
 
           atomically $ modifyTVar' count (+1)
@@ -288,12 +305,12 @@ connTests cls = do
           --dbgS "All Started"
           r <- act n conn
           dbg ["Result",show r]
-          threadDelay (secs 10)
+          -- threadDelay (secs 10)
           return r
             where
             waitAllStarted = do
               c <- atomically $ readTVar count
-              if c < numDevices
+              if c < length cls
                 then threadDelay 100 >> waitAllStarted
                 else return ()
 
@@ -350,6 +367,8 @@ expectCloseException conn = act `catch` handler
           return . Left . show . ("Unexpected data message " ++) . show $ msg
         handler (WS.CloseRequest i msg) = return $ Right (i,msg)
         handler e = return $ Left (show e)
+
+deriving instance Eq (WS.ConnectionException)
 
 secs = (* 1000000)
 

@@ -27,11 +27,11 @@ that basically means: 'a joke is just a text marked as being a joke'.
 And then we could simply start sending out jokes by writing a little program that says:
 
 ```haskell
-jokesChannel <- openChannel Joke 
+jokesChannel <- openChannel Joke
 
 send jokesChannel (Joke "Notice on an Italian bus: don’t talk to the driver, he needs his hands.")
 ```
-Funny eh :-)? 
+Funny eh :-)?
 
 Maybe not, but that's not a problem, you are free to send out your own jokes.
 

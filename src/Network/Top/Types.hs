@@ -1,9 +1,17 @@
-{-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE DeriveAnyClass    #-}
-{-# LANGUAGE DeriveFoldable    #-}
-{-# LANGUAGE DeriveFunctor     #-}
-{-# LANGUAGE DeriveGeneric     #-}
+{-# LANGUAGE CPP #-}
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveFoldable #-}
+{-# LANGUAGE DeriveFunctor #-}
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE NoMonomorphismRestriction #-}
+
+#if __GLASGOW_HASKELL__ >= 800
+{-# LANGUAGE DeriveLift #-}
+{-# LANGUAGE StandaloneDeriving #-}
+#else
+{-# LANGUAGE TemplateHaskell #-}
+#endif
 module Network.Top.Types(
   module Data.Typed
   ,Config(..),cfgIP,cfgPort,cfgPath
@@ -13,29 +21,32 @@ module Network.Top.Types(
   ,ByType(..)
   ,ByAny(..),byAny
   ,Echo(..)
-  ,ByPattern(..),byPattern,L.ByteString,ChannelSelectionResult(..),WebSocketAddress(..),SocketAddress(..),IP4Address(..),IP6Address
+  ,ByPattern(..),byPattern,L.ByteString,ChannelSelectionResult(..),WebSocketAddress(..),SocketAddress(..),IP4Address(..),IP6Address,HostAddress(..)
 --  ,module Data.Pattern
   ,chatsProtocol,chatsProtocolT,WSChannelResult
   ) where
 
-import qualified Data.ByteString  as B
+import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy   as L
 import           Data.Default.Class
 import           Data.Functor.Invariant
-import           Data.Pattern.Types     hiding (Con, Var)
+import           Data.Pattern.Types
 import           Data.Text              (Text)
 import qualified Data.Text              as T
 import           Data.Typed
 import           Data.Word
--- import qualified Network.WebSockets     as WS
 import           Data.Text.Encoding
 import           System.Timeout
-import Network.Top.Util
-import           Language.Haskell.TH.Syntax (lift)
-import Language.Haskell.TH.Lift
+import           Network.Top.Util
+#if __GLASGOW_HASKELL__ < 800
+import           Language.Haskell.TH.Lift
+#endif
+import           Language.Haskell.TH.Syntax (Lift,lift)
+import           Text.PrettyPrint.HughesPJClass(text)
+import           Data.Pattern.TH(asPattern)
+import           Data.List
 
 -- |General client configuration (ip,port and path of the Top access point)
--- data Config = Config {ip::String,port::Int,path::String}
 data Config = Config {accessPoint::WebSocketAddress IP4Address}
 
 cfgIP :: Config -> String
@@ -45,7 +56,7 @@ cfgPort :: Config -> Int
 cfgPort = fromIntegral . port . socketPort . host . accessPoint
 
 cfgPath :: Config -> String
-cfgPath = T.unpack . path . accessPoint
+cfgPath = path . accessPoint
 
 chatsProtocol :: B.ByteString
 chatsProtocol = encodeUtf8 chatsProtocolT
@@ -53,7 +64,9 @@ chatsProtocol = encodeUtf8 chatsProtocolT
 chatsProtocolT :: T.Text
 chatsProtocolT = "chats"
 
-instance Default Config where def = Config $ WebSocketAddress False (SocketAddress (DNSAddress "quid2.net") (HostPort 80)) "/ws"
+-- |The configuration for the default Top router
+instance Default Config where
+  def = Config $ WebSocketAddress False (SocketAddress (DNSAddress "quid2.net") (HostPort 80)) "/ws"
 
 -- |A typed connection
 -- data Connection a = Connection WS.Connection
@@ -113,84 +126,98 @@ type WSApp r = App L.ByteString r
 
 -- |Echo router: any value sent in is returned verbatim to the sender (for testing purposes only)
 -- Client can specify if received messages should be logged (for debugging purposes)
-data Echo a = Echo {echoDebug::Bool} deriving (Eq, Ord ,Show ,Generic)
-instance Flat (Echo a)
+data Echo a = Echo { echoDebug :: Bool }
+  deriving (Eq, Ord, Show, Generic, Flat)
 instance Model a => Model (Echo a)
 
 -- |A router indexed by type:
 -- Clients:
 -- send messages of the given type
 -- receive all messages of the same type sent by other agents
-data ByType a = ByType deriving (Eq, Ord, Show, Generic, Flat)
-
+data ByType a = ByType
+  deriving (Eq, Ord, Show, Generic, Flat)
 instance Model a =>  Model (ByType a)
 
 -- |A router index by a pattern of a given type:
 -- Clients:
 -- send messages of the given type
 -- receive all messages of the same type, that match the given pattern, sent by other agents
--- NOTE: not yet implemented
-data ByPattern a = ByPattern (Pattern WildCard) deriving (Eq, Ord, Show, Generic, Flat)
-
+data ByPattern a = ByPattern (Pattern WildCard)
+  deriving (Eq, Ord, Show, Generic, Flat)
 instance Model a => Model (ByPattern a)
 
-byPattern pat = (ByPattern <$> asPattern_ pat) >>= lift
+byPattern pat = (ByPattern <$> asPattern pat) >>= lift
 
-byAny = ByAny :: ByAny TypedBLOB
+-- byPattern pat = ByPattern <$> (asPattern_ pat >>= lift)
 
 -- The type parameter indicates the type used to return the values (for example:TypedBLOB)
 data ByAny a = ByAny deriving (Eq, Ord, Show, Generic, Flat)
-
 instance Model a =>  Model (ByAny a)
 
-data ChannelSelectionResult addr =
-  -- |The channel has been permanently setup to the requested protocol
-  Success
-  -- |The access point is unable or unwilling to open a connection with the requested routing protocol
-  | Failure {reason::Text}
-  -- |User should retry with the same transport protocol at the indicated address
-  | RetryAt addr
-  deriving (Eq, Ord, Show, Generic,Flat)
+byAny = ByAny :: ByAny TypedBLOB
 
+data ChannelSelectionResult addr =
+                                 -- |The channel has been permanently setup to the requested
+                                 -- protocol
+                                  Success
+                                 |
+                                 -- |The access point is unable or unwilling to open a connection
+                                 -- with the requested routing protocol
+                                  Failure { reason :: Text }
+                                 |
+                                 -- |User should retry with the same transport protocol at the
+                                 -- indicated address
+                                  RetryAt addr
+  deriving (Eq, Ord, Show, Generic, Flat)
 instance Model a => Model (ChannelSelectionResult a)
 
 type WSChannelResult = ChannelSelectionResult (WebSocketAddress IP4Address)
 
-data WebSocketAddress ip = WebSocketAddress {
-  -- |True if the connection is wss, False if is ws
-  secure::Bool
-  -- |Host endpoint, example: EndPoint (DNSAddress "quid2.net") (HostPort 8080)
-  ,host::SocketAddress ip
-  -- |Path to the WebSocket entry point, example: "/ws"
-  ,path::Text
-  } deriving (Eq, Ord, Show, Generic, Flat)
-
+-- |The full address of a <https://en.wikipedia.org/wiki/WebSocket WebSocket> endpoint
+data WebSocketAddress ip =
+       WebSocketAddress
+         {
+         -- |True if the connection is wss (secure), False if is ws
+         secure :: Bool
+         -- |Host endpoint, example: EndPoint (DNSAddress "quid2.net") (HostPort 8080)
+         , host :: SocketAddress ip
+         -- |Path to the WebSocket entry point, example: "/ws"
+         , path :: String
+         }
+  deriving (Eq, Ord, Show, Generic, Flat)
 instance Model ip => Model (WebSocketAddress ip)
 
-data SocketAddress ip = SocketAddress {socketAddress::HostAddress ip,socketPort::HostPort} deriving (Eq, Ord, Show, Generic,Flat)
-
+-- |The address of a <https://en.wikipedia.org/wiki/Network_socket network socket>
+data SocketAddress ip = SocketAddress { socketAddress :: HostAddress ip, socketPort :: HostPort }
+  deriving (Eq, Ord, Show, Generic, Flat)
 instance Model ip => Model (SocketAddress ip)
 
 data HostPort = HostPort {port::Word16} deriving (Eq, Ord, Show, Generic,Flat,Model)
 
-data HostAddress ip =
-  IPAddress ip
-  | DNSAddress Text
-  deriving (Eq, Ord, Show, Generic)
-instance Flat ip => Flat (HostAddress ip)
+data HostAddress ip = IPAddress ip
+                    | DNSAddress String
+  deriving (Eq, Ord, Show, Generic, Flat)
 instance Model ip => Model (HostAddress ip)
-
-instance Pretty ip => Pretty (HostAddress ip) where
-  pPrint (IPAddress ip) = pPrint ip
-  pPrint (DNSAddress t) = ptxt t
 
 data IP4Address = IP4Address Word8 Word8 Word8 Word8 deriving (Eq, Ord, Show, Generic, Flat, Model)
 
-instance Pretty IP4Address where pPrint (IP4Address w1 w2 w3 w4) = let dot = T.singleton '.' in ptxt . T.intercalate dot . map (T.pack . hex) $ [w1,w2,w3,w4]
-
 data IP6Address = IP6Address Word16 Word16 Word16 Word16 Word16 Word16 Word16 Word16 deriving (Eq, Ord, Show, Generic, Flat, Model)
 
-ptxt = txt . T.unpack
+-- Easier to define here than in separate file
+instance Pretty IP4Address where
+  pPrint (IP4Address w1 w2 w3 w4) = text . intercalate "." . map hex $ [w1, w2, w3, w4]
 
--- NOTE: can be replaced by LANGUAGE DeriveLift with ghc >= 8
+instance Pretty ip => Pretty (HostAddress ip) where
+  pPrint (IPAddress ip) = pPrint ip
+  pPrint (DNSAddress t) = text t
+
+#if __GLASGOW_HASKELL__ < 800
 deriveLift ''ByPattern
+deriveLift ''Pattern
+deriveLift ''WildCard
+#else
+deriving instance Lift a => Lift (ByPattern a)
+deriving instance Lift a => Lift (Pattern a)
+deriving instance Lift WildCard
+#endif
+

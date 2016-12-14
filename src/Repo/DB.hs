@@ -15,7 +15,7 @@ import           System.FilePath
 
 type DB = AcidState DBState
 
-data DBState = DBState !ADTEnv
+data DBState = DBState !AbsEnv
              deriving (Typeable,Show)
 
 -- Transactions
