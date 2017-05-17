@@ -15,27 +15,23 @@ import           Control.Exception             (SomeException, catch,
 import           Control.Monad
 import qualified Data.ByteString.Lazy          as BL
 import           Data.Either
+import           Data.Int
 import           Data.IORef
 import           Data.List
 import           Data.Maybe
-import           Data.Pattern.TH
-import           Data.Pattern.Types
+import           Data.Pattern
 import           Data.Typed
-import           Data.Word                     (Word16)
 import           Data.Word
 import           Language.Haskell.TH
 import           Network.Top
-import           Network.Top.Repo
 import qualified Network.WebSockets            as WS
 import           Network.WebSockets.Connection (sendCloseCode)
--- import           Repo.Disk
-import Repo.Memory
+import           Repo.Memory
 import qualified Repo.Types                    as R
 import           System.Exit                   (exitFailure)
 import           System.IO
 import           System.Log.Logger
 import           System.Time.Extra             (duration, showDuration)
--- import           System.Posix.Temp
 
 main = do
   let dbgLevel = INFO
@@ -44,11 +40,69 @@ main = do
   logLevelOut dbgLevel stdout
 
   -- testRepo
-  mainTest
+  -- testTop
+  testPatternConversion
 
-t = runClient def $(byPattern [p|Msg "sj" _ Join|]) $ \conn -> do
+
+t = do
+  --recordType def (Proxy::Proxy Msg)
+  -- recordType def (Proxy::Proxy R.RepoProtocol)
+  -- recordType def (Proxy::Proxy (ChannelSelectionResult (WebSocketAddress IP4Address))) -- Repo)
+  -- knownTypes def
+
+  runClient def byAny $ \conn -> forever $ do
+    print "WAIT"
+    r <- input conn
+    print r
+
+m = runClient def (byPattern $(patternE [p|Msg "sj" _ Join|])) $ \conn -> do
   msg::Msg <- input conn
   print msg
+  --exitFailure
+
+pp = do
+  --print $ (pat [p|False|] :: Bool)
+  let p0 = $(patternE [p|0|])
+  let p255 = $(patternE [p|255|])
+  mapM_ print [
+    w (byPattern $(patternE [p|False|]) :: ByPattern Bool)
+    --,w (byPattern $(patternE [p|III {w8=11,w16=22}|]) :: ByPattern III)
+    ,w (byPattern $(patternE [p|_|]) :: ByPattern Bool)
+    ,w (byPattern $(patternE [p|Msg "sj" _ _|]) :: ByPattern Msg)
+    ,w (byPattern $(patternE [p|Msg _ (Subject ("Hask":_:[])) (TextMsg "hello")|]) :: ByPattern Msg)
+    ,w (byPattern $(patternE [p|(5,3.3,5.5)|]) :: ByPattern (Word16,Float,Double))
+    ,w (byPattern $(patternE [p|(False,True,False,True)|]) :: ByPattern (Bool,Bool,Bool,Bool))
+    ,w (byPattern p0 :: ByPattern Word8)
+    ,w (byPattern p0 :: ByPattern Word16)
+    ,w (byPattern p0 :: ByPattern Word32)
+    ,w (byPattern p0 :: ByPattern Word64)
+    ,w (byPattern p0 :: ByPattern Word)
+    ,w (byPattern p0 :: ByPattern Int8)
+    ,w (byPattern p0 :: ByPattern Int16)
+    ,w (byPattern p0 :: ByPattern Int32)
+    ,w (byPattern p0 :: ByPattern Int64)
+    ,w (byPattern p0 :: ByPattern Int)
+    ,w (byPattern p0 :: ByPattern Integer)
+    ,w (byPattern p255 :: ByPattern Word8)
+    ,w (byPattern p255 :: ByPattern Word16)
+    ,w (byPattern p255 :: ByPattern Word32)
+    ,w (byPattern p255 :: ByPattern Word64)
+    ,w (byPattern p255 :: ByPattern Word)
+    ,w (byPattern p255 :: ByPattern Int8)
+    ,w (byPattern p255 :: ByPattern Int16)
+    ,w (byPattern p255 :: ByPattern Int32)
+    ,w (byPattern p255 :: ByPattern Int64)
+    ,w (byPattern p255 :: ByPattern Int)
+    ,w (byPattern p255 :: ByPattern Integer)
+    ,w (byPattern p255 :: ByPattern Integer)
+    ]
+
+  --  where
+  -- print $ (ByPattern $(pat [p|False|]) :: ByPattern Bool)
+  --   pat pp = let ByPattern p = byPattern pp in p
+  where
+    --w :: ByPattern a -> Pattern WildCard
+    w (ByPattern p) = p
 
 testRepo = do
   -- Local type repo
@@ -59,16 +113,27 @@ testRepo = do
   R.close repo
   return r
 
-showInfo = do
-  --recordType def (Proxy::Proxy Msg)
-  -- recordType def (Proxy::Proxy R.RepoProtocol)
-  -- recordType def (Proxy::Proxy (ChannelSelectionResult (WebSocketAddress IP4Address))) -- Repo)
-  knownTypes def
+p = testPatternConversion
 
-  -- exitFailure
+testPatternConversion = do
+  -- (pat [p|False|] :: IO Bool) >>= print
+  print ""
+  -- pats <- mapM patternQ [
+  --   [p|_|]
+  --   ,[p|33|]
+  --   --,[p|33::Int#|]
+  --    --,[p|-33|] -- unsupported by TH
+  --   --,[p|3.3|]
+  --   ,[p|III {w8=11}|]
+  --   ,[p|Msg "sj" _ Join|]
+  --   ,[p|Msg _ (Subject ("Haskell":_:[])) _|]
+  --   ]    
+  -- print pats
+--    where pat hp = (\pp -> let ByPattern p = byPattern pp in p) <$> (patternQ hp)
+
 
 -- TODO: test by sending incorrect router value
-mainTest = do
+testTop = do
 
     let msgs = [Msg "rob" (Subject ["Joke"]) Join
                ,Msg "sj" (Subject ["Haskell"]) Join
@@ -76,16 +141,21 @@ mainTest = do
                ,Msg "titto" (Subject ["Haskell","General"]) (TextMsg "Nice language!")
                ]
 
-    [pwild,p1,p2,p3,p4,p5] <- mapM patternQ [
+    [pwild,p1,p2,p3,p4,p5,wp,fp,n1] <- mapM patternQ [
       [p|_|]
       ,[p|Msg "sj" _ _|]
       ,[p|Msg "sj" _ Join|]
       ,[p|Msg _ _ Join|]
       ,[p|Msg _ (Subject ("Haskell":[])) _|]
       ,[p|Msg _ (Subject ("Haskell":_:[])) _|]
+      ,[p|33|]
+      --,[p|-33|] -- unsupported by TH
+      ,[p|3.3|]
+      ,[p|III {w8=11}|]
       ]
 
-    let mixTest0 = byMixedTest False 2500 [
+
+    let mixTest0 = byMixedTest False 25 [
           (Nothing,0) -- this sends so it receives nothing
           ,(Just [p|_|],4)
           ,(Nothing,4)
@@ -102,17 +172,18 @@ mainTest = do
           ,(Nothing,4)
           ] msgs
 
+    -- NOTE: these tets (in particular byAny) will work only on an isolated router
     let mixAllTest = connTests [
           mix byAny [typedBLOB 'a',typedBLOB 'b'] 9
          ,mix byAny [] 11
          ,mix ByType msgs 0
          ,mix ByType [True,False,True] 2
          ,mix ByType [False,True] 3
-         ,mix (ByPattern p1) ([]::[Msg]) 2
-         ,mix (ByPattern pwild) ([]::[Bool]) 5
-         ,mix (ByPattern pwild) ([]::[Msg]) 4
+         ,mix (byPattern p1) ([]::[Msg]) 2
+         ,mix (byPattern pwild) ([]::[Bool]) 5
+         ,mix (byPattern pwild) ([]::[Msg]) 4
          ,mix ByType ([]::[Char]) 2
-         ,mix (ByPattern pwild) ([]::[Char]) 2
+         ,mix (byPattern pwild) ([]::[Char]) 2
          ]
 
     let patTest = byPatternTest [([p|_|],0) -- this sends so it receives nothing
@@ -131,18 +202,14 @@ mainTest = do
                    [[True,False,True],[False,False,True],[True,True]]
 
     mapM_ perform [--wsTest
-      byTypeTest [TextMsg "ciao",Join,TextMsg "ok"] 3
-      ,byTypeTest [False,True,False,True] 5
+      byTypeTest [TextMsg "ciao",Join,TextMsg "ok"] 7
+      ,byTypeTest [False,True,False,True] 11
       ,mixTest
+      --,mixTest0
       ,mixAllTest
       ,patTest
       ,patTest2
       ]
-
-    -- -- let numDeviceMsgs bS= 3
-    -- -- m <- run $ master numDevices numDeviceMsgs
-    -- -- devices <- mapM (run . device numDevices numDeviceMsgs) [1..numDevices]
-    -- -- let t2 = m:devices
 
   where
 
@@ -161,27 +228,12 @@ mainTest = do
 
     largeMsg = msgL 1000000
 
-    -- master :: Int -> ClientApp Bool
-    -- master numDevices numDeviceMsgs conn = do
-    --   protocol conn $ NamedHub "huba"
-    --   recMsgs conn $ numDevices*numDeviceMsgs
-    --   return True
-
-    -- device numDevices numDeviceMsgs id conn = do
-    --    protocol conn $ NamedHub "huba"
-    --    -- sendBinaryData conn (encode $ Named ("device"++show n) $ GeoPos (n*3.3) (n*5.5))
-    --    threadDelay $ secs 1
-    --    mapM_ (sendBinaryData conn . msg) [1 .. numDeviceMsgs]
-
-    --    recMsgs conn $ (numDevices-1)*numDeviceMsgs
-    --    return True
-
     -- Test low level protocol
     -- WebSockets should support up to 2**64 bytes long messages.
     -- wsTest :: ClientApp Bool
     -- NOTE: GHC only
     -- wsTest = (:[]) <$> wsTest_
-    -- wsTest_ = run (Echo False::Echo [Word8]) $ \conn@(Connection connWS) -> do
+    -- wsTest_ = run (Echo False::Echo [Int8]) $ \conn@(Connection connWS) -> do
     --   let sendRec msg = do
     --         output conn msg
     --         msgRet <- input conn
@@ -219,20 +271,12 @@ mix r msgs numAnswers = ConnTst (run r) act
       mapM_ (output conn) msgs
       checkNumInputs True numAnswers conn
 
--- byMixedAllTest cs = do
---    testClients $ map (\ -> (conn,perClient (out conn msgs) numAnswers)) cs
---   where
---     act msgs multiplier n conn =
---       mapM_ (output conn) (concat $ replicate multiplier msgs)
---     perClient (ch,msgs,numAnswers)act numAnswers conn = do
---       act
---       checkNumInputs precise (numAnswers*multiplier) conn
 byMixedTest precise multiplier hs msgs = do
   clts <- mapM
             (\(mp, num) -> let n = num * multiplier
                            in case mp of
                              Nothing -> return (run $ ByType, perClient n)
-                             Just p  -> (\pat -> (run $ ByPattern pat, perClient n)) <$> patternQ p)
+                             Just p  -> (\pat -> (run $ byPattern pat, perClient n)) <$> patternQ p)
             hs
   testClients clts
 
@@ -242,19 +286,19 @@ byMixedTest precise multiplier hs msgs = do
       checkNumInputs precise numAnswers conn
 
 
-byPatternTest ::  (Model a,Typed a,Flat a,Show a,Foldable t,Show (t a)) => [(PatQ, Int)] -> t a -> IO [Async Bool]
+byPatternTest ::  (Model a,Flat a,Show a,Foldable t,Show (t a)) => [(PatQ, Int)] -> t a -> IO [Async Bool]
 byPatternTest hpats msgs = do
    pats <- mapM (\(p,i) -> (,i) <$> patternQ p) hpats
    testClients $ map act pats
   where
-    act (pat,numAnswers) = (run $ ByPattern pat,perClient)
+    act (pat,numAnswers) = (run $ byPattern pat,perClient)
       where
         perClient n conn = do
           when (n==0) $ mapM_ (output conn) msgs
           chkNumInputs numAnswers conn
 
 -- Each actor sends the same messages and should receive all those sent minus those sent by itself.
-byTypeTest :: (Model a,Typed a,Flat a,Show a) => [a] -> Int -> IO [Async Bool]
+byTypeTest :: (Model a,Flat a,Show a) => [a] -> Int -> IO [Async Bool]
 byTypeTest msgs numDevices = do
   let numInMsgs = (numDevices-1)*length msgs
   testClients . map (run ByType,) . map (act numInMsgs) $ [1..numDevices]
@@ -265,11 +309,16 @@ byTypeTest msgs numDevices = do
 chkNumInputs = checkNumInputs True
 
 checkNumInputs precise numAnswers conn = do
-  allIn <- all isJust <$> replicateM numAnswers (inputTimeout 10 conn)
+  ans <- replicateM numAnswers (inputTimeout 10 conn)
+  let allIn = all isJust ans
   -- WHY OH WHY? if inputWithTimeout returns a timeout, a ConnectionClosed exception is thrown after this returns
   -- after <- inputWithTimeout 3 conn
   -- So we do this way instead, we let the input continue undisturbed and we do not get an exception:
   after <- if precise then inputTimeout 5 conn else return Nothing
+  let numFailed = length $ filter isNothing ans
+  --when (numFailed >0) $ print (unints ["Failed",show numFailed,"out of",show numAnswers] )
+  when (numFailed >0) $ print (unwords ["Failed",show numFailed,"out of",show numAnswers,show ans] )
+  when (isJust after) $ print (unwords ["Failed after",show after] )
   return $ allIn && isNothing after
 
 inputTimeout :: Show a => Int -> Connection a -> IO (Maybe a)
@@ -301,8 +350,11 @@ connTests cls = do
           -- make sure all clients are connected or we will miss some messages.
 
           atomically $ modifyTVar' count (+1)
-          waitAllStarted -- Are these actually all started? Apparently not
+          waitAllStarted 
           --dbgS "All Started"
+          -- Are these actually all started?
+          -- Apparently not, so wait a bit longer
+          threadDelay (secs 2)
           r <- act n conn
           dbg ["Result",show r]
           -- threadDelay (secs 10)
@@ -371,6 +423,8 @@ expectCloseException conn = act `catch` handler
 deriving instance Eq (WS.ConnectionException)
 
 secs = (* 1000000)
+
+data III = III {w8::Int8,w16::Int16,w::Int,i8::Int8,i::Int,f::Float,d::Double,ii::Integer}
 
 -- Data model for a simple chat system
 data Msg = Msg {fromUser::User

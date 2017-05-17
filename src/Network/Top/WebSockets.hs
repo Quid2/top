@@ -13,16 +13,14 @@ module Network.Top.WebSockets(
   -- ,protocol
   ) where
 
-import           Control.Exception
 import qualified Data.ByteString                   as B
-import qualified Data.ByteString.Lazy              as L
 import           Network.Top.Types
-import           Network.Top.Util
-
 
 #ifdef ghcjs_HOST_OS
 -- GHC-JS Version
+import qualified Data.ByteString.Lazy              as L
 import           Control.Applicative               (Alternative (empty, (<|>)))
+import           Control.Exception
 import qualified Control.Concurrent.STM            as S
 import qualified Data.JSString                     as S
 import           Data.Maybe
@@ -41,6 +39,7 @@ import           JavaScript.TypedArray.ArrayBuffer
 import qualified JavaScript.TypedArray.ArrayBuffer as A
 import           GHC.Exts
 import qualified Data.Text as T
+import           Network.Top.Util
 -- import JavaScript.TypedArray -- ArrayBuffer, SomeArrayBuffer(..))
 -- import JavaScript.TypedArray.Internal -- ArrayBuffer, SomeArrayBuffer(..))
 

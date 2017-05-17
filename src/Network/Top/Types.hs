@@ -15,21 +15,24 @@
 module Network.Top.Types(
   module Data.Typed
   ,Config(..),cfgIP,cfgPort,cfgPath
-  ,Connection(..),inputWithTimeout,App--,WSConnection(..),WSApp
+  ,Connection(..),inputWithTimeout,App
   ,WSConnection,WSApp
   ,def
   ,ByType(..)
   ,ByAny(..),byAny
   ,Echo(..)
-  ,ByPattern(..),byPattern,L.ByteString,ChannelSelectionResult(..),WebSocketAddress(..),SocketAddress(..),IP4Address(..),IP6Address,HostAddress(..)
+  --,ByPattern(..)
+  --,byPattern
+  ,L.ByteString,ChannelSelectionResult(..),WebSocketAddress(..),SocketAddress(..),IP4Address(..),IP6Address,HostAddress(..)
 --  ,module Data.Pattern
   ,chatsProtocol,chatsProtocolT,WSChannelResult
   ) where
 
+-- import Data.ByteString(ByteString)
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy   as L
 import           Data.Default.Class
-import           Data.Functor.Invariant
+-- import           Data.Functor.Invariant
 import           Data.Pattern.Types
 import           Data.Text              (Text)
 import qualified Data.Text              as T
@@ -40,11 +43,13 @@ import           System.Timeout
 import           Network.Top.Util
 #if __GLASGOW_HASKELL__ < 800
 import           Language.Haskell.TH.Lift
-#endif
+#else
 import           Language.Haskell.TH.Syntax (Lift,lift)
+#endif
 import           Text.PrettyPrint.HughesPJClass(text)
-import           Data.Pattern.TH(asPattern)
+-- import           Data.Pattern.TH(asPattern)
 import           Data.List
+-- import Data.Pattern.Transform
 
 -- |General client configuration (ip,port and path of the Top access point)
 data Config = Config {accessPoint::WebSocketAddress IP4Address}
@@ -138,17 +143,6 @@ data ByType a = ByType
   deriving (Eq, Ord, Show, Generic, Flat)
 instance Model a =>  Model (ByType a)
 
--- |A router index by a pattern of a given type:
--- Clients:
--- send messages of the given type
--- receive all messages of the same type, that match the given pattern, sent by other agents
-data ByPattern a = ByPattern (Pattern WildCard)
-  deriving (Eq, Ord, Show, Generic, Flat)
-instance Model a => Model (ByPattern a)
-
-byPattern pat = (ByPattern <$> asPattern pat) >>= lift
-
--- byPattern pat = ByPattern <$> (asPattern_ pat >>= lift)
 
 -- The type parameter indicates the type used to return the values (for example:TypedBLOB)
 data ByAny a = ByAny deriving (Eq, Ord, Show, Generic, Flat)
@@ -179,9 +173,9 @@ data WebSocketAddress ip =
          {
          -- |True if the connection is wss (secure), False if is ws
          secure :: Bool
-         -- |Host endpoint, example: EndPoint (DNSAddress "quid2.net") (HostPort 8080)
+         -- |Host endpoint, example: SocketAddress (DNSAddress "quid2.net") (HostPort 80)
          , host :: SocketAddress ip
-         -- |Path to the WebSocket entry point, example: "/ws"
+         -- |Path to the WebSocket access point, example: "/ws"
          , path :: String
          }
   deriving (Eq, Ord, Show, Generic, Flat)
@@ -212,12 +206,20 @@ instance Pretty ip => Pretty (HostAddress ip) where
   pPrint (DNSAddress t) = text t
 
 #if __GLASGOW_HASKELL__ < 800
-deriveLift ''ByPattern
-deriveLift ''Pattern
-deriveLift ''WildCard
+--deriveLift ''ByPattern
+--deriveLift ''Match
+deriveLift ''Pat
+-- deriveLift ''WildCard
+deriveLift ''PRef
 #else
-deriving instance Lift a => Lift (ByPattern a)
-deriving instance Lift a => Lift (Pattern a)
-deriving instance Lift WildCard
+-- deriving instance Lift a => Lift (ByPattern a)
+--deriving instance Lift (ByPattern a)
+--deriving instance Lift Match
+-- deriving instance Lift a => Lift (Type a)
+-- deriving instance Lift AbsRef
+-- deriving instance Lift (SHA3_256_6 a)
+deriving instance Lift a => Lift (Pat a)
+-- deriving instance Lift WildCard
+deriving instance Lift PRef
 #endif
 

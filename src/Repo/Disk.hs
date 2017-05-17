@@ -1,7 +1,7 @@
 module Repo.Disk where
-import qualified Data.Map   as M
+-- -- import qualified Data.Map   as M
 import qualified Repo.Types as R
-import Data.IORef
+-- -- import Data.IORef
 import Data.Typed
 import Repo.DB
 

@@ -1,5 +1,5 @@
-module Network.Top(module X,Pattern(..),WildCard(..),Matcher) where
-import           Data.Pattern.Types
+module Network.Top(module X) where
+import           Data.Pattern           as X
 import           Network.Top.Pipes      as X
 import           Network.Top.Repo       as X
 import           Network.Top.Run        as X

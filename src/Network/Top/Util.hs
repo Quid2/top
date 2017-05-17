@@ -7,6 +7,7 @@
 {-# LANGUAGE JavaScriptFFI             #-}
 
 module Network.Top.Util(
+  -- *Logging utilities
   dbg,warn,info,err,dbgS,logLevel
 #ifdef ghcjs_HOST_OS
   ,Priority(..)
@@ -17,7 +18,9 @@ module Network.Top.Util(
   ,eitherToMaybe--,isRight
   ,liftIO,forever,when,unless,strictTry,try,tryE,forceE,SomeException
   ,async,cancel
-  ,threadDelay,milliseconds,seconds,minutes
+  ,threadDelay
+  -- *Time 
+  ,milliseconds,seconds,minutes
   ) where
 
 import           Control.Concurrent        (threadDelay)
@@ -105,6 +108,7 @@ info :: MonadIO m => [String] -> m ()
 info = liftIO . infoM "top" . unwords
 #endif
 
+forceE :: Either String c -> c
 forceE = either error id -- throwIO
 
 tryE :: IO a -> IO (Either SomeException a)

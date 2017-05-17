@@ -3,43 +3,86 @@
 {-# LANGUAGE DeriveFunctor     #-}
 {-# LANGUAGE DeriveGeneric     #-}
 {-# LANGUAGE DeriveTraversable #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE OverloadedStrings #-}
-
 {-# LANGUAGE TupleSections     #-}
-module Data.Pattern.Types(
-  Pattern(..),WildCard(..),showPatt
-  ,HVar(..),valPattern,isVar
-  ,Matcher
-  ) where
+module Data.Pattern.Types (
+    Matcher,
+    Pat(..),
+    PRef(..),
+    Match(..),
+    optPattern,
+    Pattern,
+    ByPattern(..),
+    -- *Variables
+    WildCard(..),
+    ) where
 
 import qualified Data.ByteString as B
-import qualified Data.Flat.Bits  as V
+-- import qualified Data.Flat.Bits  as V
 import           Data.List       (intercalate)
-import           Data.Typed      hiding (Con, Name, Val, Var)
+import           Data.Typed      hiding (Con, Name, Var)
 
--- |High-level pattern definition, used for Pattern channels
-data Pattern v =
+--newtype Pattern = Pattern [Match] deriving (Show,Eq,Generic,Flat,Model)
+
+-- |A router indexed by a pattern of a given type:
+-- Clients:
+-- send messages of the given type
+-- receive all messages of the same type, that match the given pattern, sent by other agents
+data ByPattern a = ByPattern Pattern
+  deriving (Eq, Ord, Show, Generic, Flat)
+instance Model a => Model (ByPattern a)
+
+type Pattern = [Match [Bool]]
+instance Flat [Match [Bool]]
+
+-- |A simple pattern match
+data Match v = MatchValue v            -- ^Match a flattened value
+             | MatchAny (Type AbsRef)  -- ^Match any value of the given type (wildcard)
+  deriving (Show, Eq, Ord, Generic, Flat,Functor) -- ,Foldable,Traversable)
+
+instance Model v => Model (Match v)
+
+-- |Optimise pattern
+optPattern :: [Match [a]] -> [Match [a]]
+optPattern (MatchValue []:t) = optPattern t
+optPattern (MatchValue bs:MatchValue bs':t) = optPattern $ MatchValue (bs ++ bs'):t
+optPattern (x:xs) = x : optPattern xs
+optPattern [] = []
+
+-- |A matcher, a predicate defined over the binary representation of a value
+type Matcher = B.ByteString -> Bool
+
+-- |Pattern representation used for internal processing
+data Pat v =
   -- |A constructor
   PCon
-  String       -- ^Name of the constructor (e.g. "True")
-  [Pattern v]  -- ^Patterns for the parameters
+  String   -- Name of the constructor (e.g. "True")
+  [Pat v]  -- Patterns for the parameters
 
-  | PVar v     -- A variable
+  | PName v
 
-  -- This assumes a specific mapping of basic types to absolute types
-  | PVal [Bool] -- A value, binary encoded (using 'flat')
+  --deriving (Functor,Foldable,Eq, Ord, Show, Generic, Flat)
+  deriving (Eq, Ord, Show, Generic, Flat)
 
-  -- PInteger Integer -- TO BE MAPPED TO APPROPRIATE NUMERIC TYPE
-  deriving (Functor,Foldable,Eq, Ord, Show, Generic, Flat)
+-- instance Flat v => Flat [Pat v]
+instance Model v => Model (Pat v)
 
-instance Model v => Model (Pattern v)
+-- |Representation of literals and variables as returned by the TH pattern parser.
+data PRef = PInt Integer
+          | PRat Rational
+          | PChar Char
+          | PString String
+          | PWild
+          | PVar String
+  deriving (Eq, Ord, Show) -- , Generic, Flat, Model)
 
 -- |A Variable that can be either a name (e.g. "a") or a wildcard "_"
-data HVar = V String
-          | W
+data VarOrWild = V String
+               | W
   deriving (Eq, Ord, Show, Generic, Flat, Model)
 
-isVar :: HVar -> Bool
+isVar :: VarOrWild -> Bool
 isVar (V _) = True
 isVar _     = False
 
@@ -47,22 +90,21 @@ isVar _     = False
 data WildCard = WildCard
   deriving (Eq, Ord, Show, Generic, Flat, Model)
 
-prefixPattern :: (Foldable t, Flat a) => t a -> Pattern HVar
-prefixPattern = listPatt (PVar W)
+onlyWildCards :: VarOrWild -> WildCard
+onlyWildCards W = WildCard
+onlyWildCards _ = error "Only wildcards (_) are allowed"
 
-listPatt :: (Foldable t, Flat a) => Pattern v -> t a -> Pattern v
-listPatt = foldr (\a p -> PCon "Cons" [valPattern a,p])
+-- |Pattern _:_
+-- prefixPattern :: (Foldable t, Flat a) => t a -> Pattern HVar
+-- prefixPattern = listPatt (PVar W)
 
-valPattern :: Flat a => a -> Pattern v
-valPattern = PVal . V.bools
+--listPatt :: (Foldable t, Flat a) => Pattern v -> t a -> Pattern v
+--listPatt = foldr (\a p -> PCon "Cons" [valPattern a,p])
 
-showPatt :: Pattern HVar -> String
+showPatt :: Pat VarOrWild -> String
 showPatt (PCon n ps) = unwords ["Data.Pattern.Con",show n,"[",intercalate "," . map showPatt $ ps,"]"]
-showPatt (PVar (V v)) = v -- concat ["val (",v,")"] -- showVar v
+showPatt (PName (V v)) = v -- concat ["val (",v,")"] -- showVar v
  --showPatt (Var W) = "Var W" -- "WildCard" -- "WildCard" -- "_"
 showPatt p = show p -- show bs -- concat [Data.BitVector,show bs
 
-onlyWildCards :: HVar -> WildCard
-onlyWildCards W = WildCard
 
-type Matcher = B.ByteString -> Bool

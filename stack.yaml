@@ -1,27 +1,19 @@
-resolver: lts-6.22
-# resolver: lts-7.12
+#resolver: lts-6.30
+resolver: lts-7.21
 
 packages:
 - '.'
 
-#- ../flat
-#- ../model
-#- ../typed
+# - location: ../flat
+#   extra-dep: true
 
-- location:
-   git: https://github.com/tittoassini/model
-   commit: 02babc602daa342ed42827a9cfe24dbe5ce6bec2
+# - location: ../model
+#   extra-dep: true
+
+- location: ../zm
   extra-dep: true
 
-- location:
-   git: https://github.com/tittoassini/flat
-   commit: 314c185ba9be0ebcf08978625b45a6da42e0f675
-  extra-dep: true
-
-- location:
-   git: https://github.com/tittoassini/typed
-   commit: 3db551a5bb9e5f572202c65935ee8cd9c8494196 
-  extra-dep: true
-
-#extra-deps:
-# - model-0.2.1
+extra-deps:
+- model-0.3
+- flat-0.3
+- cryptonite-0.22

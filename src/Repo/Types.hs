@@ -1,9 +1,10 @@
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE DeriveGeneric ,DeriveAnyClass #-}
 module Repo.Types where
 
 import Data.Typed
-import Data.Text(Text)
+-- -- import Data.Text(Text)
 -- import Control.Exception
 
 {-
@@ -50,6 +51,8 @@ data RepoProtocol = Record AbsADT
                   | AskDataTypes
                   | KnownDataTypes [(AbsRef,AbsADT)]
                   deriving (Eq, Ord, Show, Generic, Flat, Model)
+
+instance Flat [(AbsRef,AbsADT)]
 
 type RepoError = String -- SomeException -- String
 

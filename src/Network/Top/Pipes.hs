@@ -5,8 +5,8 @@ module Network.Top.Pipes(
   ,pipeIn,pipeOut
   ) where
 
-import           Control.Monad
-import           Network.Top.Run
+-- -- import           Control.Monad
+-- -- import           Network.Top.Run
 import           Network.Top.Types
 import           Pipes
 

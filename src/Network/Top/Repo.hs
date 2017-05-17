@@ -34,10 +34,7 @@ knownTypes cfg = runClient cfg ByType $ \conn -> do
 
   withTimeout 30 loop
 
--- solveProxy :: Model a => Repo -> Config -> Proxy a -> IO (Either RepoError [(AbsRef,AbsADT)])
--- solveProxy repo cfg = solveType_ repo cfg . absType
-
--- |Retrieve the full type model of the given absolute type
+-- |Retrieve the full type model for the given absolute type
 solveType :: Repo -> Config -> AbsType -> IO (Either RepoError AbsTypeModel)
 solveType repo cfg t = ((\env -> TypeModel t (M.fromList env)) <$>) <$> solveType_ repo cfg t
   where
@@ -60,12 +57,12 @@ solveType repo cfg t = ((\env -> TypeModel t (M.fromList env)) <$>) <$> solveTyp
          then sequence rs
          else Left (unlines $ map fromLeft errs)
 
-solveRef :: Repo -> RefSolver -> AbsRef -> IO (Either RepoError (AbsRef,AbsADT))
-solveRef repo solver ref = ((ref,) <$> )<$> do
-  rr <- get repo ref
-  case rr of
-    Nothing -> solver ref >>= mapM (\o -> put repo o >> return o)
-    Just o  -> return $ Right o
+    solveRef :: Repo -> RefSolver -> AbsRef -> IO (Either RepoError (AbsRef,AbsADT))
+    solveRef repo solver ref = ((ref,) <$> )<$> do
+      rr <- get repo ref
+      case rr of
+        Nothing -> solver ref >>= mapM (\o -> put repo o >> return o)
+        Just o  -> return $ Right o
 
 resolveRef cfg ref = do
   er <- strictTry $ resolveRef_ cfg ref
