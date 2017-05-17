@@ -10,7 +10,7 @@ import           Data.Either.Extra
 import           Data.List         (nub)
 import qualified Data.Map          as M
 import           Data.Maybe
-import           Data.Typed
+import           ZM
 import           Network.Top.Run
 import           Network.Top.Types
 import           Network.Top.Util

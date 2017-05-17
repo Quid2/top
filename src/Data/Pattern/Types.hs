@@ -21,7 +21,7 @@ module Data.Pattern.Types (
 import qualified Data.ByteString as B
 -- import qualified Data.Flat.Bits  as V
 import           Data.List       (intercalate)
-import           Data.Typed      hiding (Con, Name, Var)
+import           ZM      hiding (Con, Name, Var)
 
 --newtype Pattern = Pattern [Match] deriving (Show,Eq,Generic,Flat,Model)
 

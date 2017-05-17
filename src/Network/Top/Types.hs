@@ -13,7 +13,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 #endif
 module Network.Top.Types(
-  module Data.Typed
+  module ZM
   ,Config(..),cfgIP,cfgPort,cfgPath
   ,Connection(..),inputWithTimeout,App
   ,WSConnection,WSApp
@@ -36,7 +36,7 @@ import           Data.Default.Class
 import           Data.Pattern.Types
 import           Data.Text              (Text)
 import qualified Data.Text              as T
-import           Data.Typed
+import           ZM
 import           Data.Word
 import           Data.Text.Encoding
 import           System.Timeout

@@ -20,7 +20,7 @@ import           Data.IORef
 import           Data.List
 import           Data.Maybe
 import           Data.Pattern
-import           Data.Typed
+import           ZM
 import           Data.Word
 import           Language.Haskell.TH
 import           Network.Top

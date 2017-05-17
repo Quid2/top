@@ -2,7 +2,7 @@ module Repo.Disk where
 -- -- import qualified Data.Map   as M
 import qualified Repo.Types as R
 -- -- import Data.IORef
-import Data.Typed
+import ZM
 import Repo.DB
 
 dbRepo dir = do

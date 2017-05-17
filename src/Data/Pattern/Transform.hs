@@ -11,7 +11,7 @@ import qualified Data.ListLike.String as L
 import qualified Data.Map             as M
 import           Data.Pattern.Types
 import           Data.Pattern.Util
-import           Data.Typed           hiding (Name)
+import           ZM           hiding (Name)
 import           Data.Word
 
 -- Convert haskell pattern to the simpler form accepted by ByPattern channels

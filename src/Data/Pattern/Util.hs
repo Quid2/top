@@ -1,6 +1,6 @@
 module Data.Pattern.Util where
 
-import Data.Typed
+import ZM
 import Data.Word
 import Data.Int
 import Data.Either

@@ -11,7 +11,7 @@ module Network.Top.Run (
 import qualified Data.ByteString.Lazy   as L
 import           Data.Flat
 import qualified Data.Text              as T
-import           Data.Typed
+import           ZM
 import           Network.Top.Types
 import           Network.Top.Util
 import           Network.Top.WebSockets

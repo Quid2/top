@@ -7,7 +7,7 @@ module Data.Pattern.Transform2(Pattern,ByPattern(..),byPattern) where
 import           Data.Int
 import qualified Data.Map           as M
 import           Data.Pattern.Types
-import           Data.Typed         hiding (Name)
+import           ZM         hiding (Name)
 import           Data.Word
 import qualified Data.Flat.Bits       as V
 import           Data.Pattern.Util

@@ -10,7 +10,7 @@ import           Data.Acid
 import qualified Data.Map             as M
 import           Data.SafeCopy
 import           Data.Typeable
-import           Data.Typed
+import           ZM
 import           System.FilePath
 
 type DB = AcidState DBState

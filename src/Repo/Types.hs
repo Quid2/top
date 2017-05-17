@@ -3,7 +3,7 @@
 {-# LANGUAGE DeriveGeneric ,DeriveAnyClass #-}
 module Repo.Types where
 
-import Data.Typed
+import ZM
 -- -- import Data.Text(Text)
 -- import Control.Exception
 
