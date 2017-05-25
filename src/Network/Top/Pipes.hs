@@ -1,12 +1,18 @@
--- Pipes utilities
-module Network.Top.Pipes(
-  --module Pipes
-   runEffect,(>->),yield,for,await,lift
-  ,pipeIn,pipeOut
-  ) where
+-- |Top connections as Pipes
+module Network.Top.Pipes (
+    pipeIn,
+    pipeOut,
 
--- -- import           Control.Monad
--- -- import           Network.Top.Run
+    -- *Re-exports from Pipe
+    runEffect,
+    (>->),
+    yield,
+    for,
+    await,
+    lift,
+    ) where
+
+import           Data.Flat
 import           Network.Top.Types
 import           Pipes
 

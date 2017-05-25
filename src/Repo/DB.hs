@@ -2,6 +2,7 @@
 {-# LANGUAGE PackageImports   #-}
 {-# LANGUAGE TemplateHaskell  #-}
 {-# LANGUAGE TypeFamilies     #-}
+-- |A persistent repository for absolute types, based on acid-state
 module Repo.DB(DBState(..),wholeDB,openDB,closeDB,getDB,putDB) where
 
 import           "mtl" Control.Monad.Reader
@@ -10,12 +11,13 @@ import           Data.Acid
 import qualified Data.Map             as M
 import           Data.SafeCopy
 import           Data.Typeable
-import           ZM
 import           System.FilePath
+import           ZM
 
 type DB = AcidState DBState
 
-data DBState = DBState !AbsEnv
+newtype DBState = DBState AbsEnv
+--data DBState = DBState !AbsEnv
              deriving (Typeable,Show)
 
 -- Transactions

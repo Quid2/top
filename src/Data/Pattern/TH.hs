@@ -9,12 +9,6 @@ import           Language.Haskell.TH        hiding (Match, Pat, Type)
 import qualified Language.Haskell.TH        as TH
 import           Language.Haskell.TH.Syntax hiding (Match, Type, Pat)
 import           Network.Top.Types          ()
-{-
--}
-
--- $(byPattern [p|False|]) :: ByPattern Bool
-
--- ByPattern $(pattern [p|False|]) :: ByPattern Bool
 
 -- Note: no support for negative integers or tuples with more than 5 elements
 patternE :: Q TH.Pat -> Q Exp
@@ -45,6 +39,7 @@ asPatternM = (conv <$>)
       TupP [p1,p2] -> (\a b -> PCon "Tuple2" [a,b]) (conv p1) (conv p2)
       TupP [p1,p2,p3] -> (\a b c -> PCon "Tuple3" [a,b,c]) (conv p1) (conv p2) (conv p3)
       TupP [p1,p2,p3,p4] -> (\a b c d -> PCon "Tuple4" [a,b,c,d]) (conv p1) (conv p2) (conv p3) (conv p4)
+      TupP [p1,p2,p3,p4,p5] -> (\e1 e2 e3 e4 e5 -> PCon "Tuple5" [e1,e2,e3,e4,e5]) (conv p1) (conv p2) (conv p3) (conv p4) (conv p5)
 
       -- RecP --
 

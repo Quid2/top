@@ -1,8 +1,10 @@
-module Repo.Memory where
+-- |Transient in-memory implementation of a repository of absolute types
+module Repo.Memory(memRepo) where
+
+import           Data.IORef
 import qualified Data.Map   as M
 import qualified Repo.Types as R
-import Data.IORef
-import ZM
+import           ZM
 
 memRepo = do
   db <- newIORef M.empty

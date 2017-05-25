@@ -9,8 +9,7 @@
 {-# LANGUAGE UnboxedTuples             #-}
 {-# LANGUAGE UnliftedFFITypes          #-}
 module Network.Top.WebSockets(
-  runWSClient--,sendMsg,receiveMsg
-  -- ,protocol
+  runWSApp
   ) where
 
 import qualified Data.ByteString                   as B
@@ -43,6 +42,10 @@ import           Network.Top.Util
 -- import JavaScript.TypedArray -- ArrayBuffer, SomeArrayBuffer(..))
 -- import JavaScript.TypedArray.Internal -- ArrayBuffer, SomeArrayBuffer(..))
 
+runWSApp :: Config -> WSApp r -> IO r
+runWSApp cfg = bracket (newConnection cfg) close
+
+-- |Connection Status
 data ConnStatus a = ConnOpening
                   | ConnOpen {inp::IO a,out::a -> IO (),cls::IO ()}
                   | ConnClosed -- is this needed?
@@ -51,9 +54,7 @@ data Conn a = Conn {connConfig:: Config
                    ,connStatus :: S.TVar (ConnStatus a)
                    ,connMessages :: S.TQueue a}
 
-runWSClient :: Config -> WSApp r -> IO r
-runWSClient cfg = bracket (newConnection cfg) close
-
+newConnection :: Config -> IO WSConnection
 newConnection cfg = do
   conn <- Conn cfg <$> S.newTVarIO ConnClosed <*> S.newTQueueIO
 
@@ -102,7 +103,7 @@ reopen c = do
                         dbgS "received message"
                         case getDataFixed event of
                           Left e -> error e
-                          Right bs -> S.atomically . S.writeTQueue (connMessages c) . L.fromStrict $ bs
+                          Right bs -> S.atomically . S.writeTQueue (connMessages c) $ bs
                         -- case getDataFixed event of
                         --   StringData s -> dbgS "unexpected String message"
                         --   BlobData blob -> dbgS "unexpected Blob message"
@@ -141,7 +142,7 @@ reopen c = do
 
              out v = do
                -- dbg ["send",show $ L.unpack v]
-               webSocketSend ws (L.toStrict v)
+               webSocketSend ws v
              -- out v = do
               --   r <- tryE (webSocketSend conn (L.toStrict v))
              --   case r of
@@ -169,8 +170,8 @@ reopen c = do
 --    JS.close conn
 --    dbg ["Closing connection",reason]
 
--- runWSClient :: Config -> WSApp r -> IO r
--- runWSClient cfg app = do
+-- runWSApp :: Config -> WSApp r -> IO r
+-- runWSApp cfg app = do
 --         q <- S.newTQueueIO
 --         closed <- S.newTVarIO False
 
@@ -221,7 +222,7 @@ reopen c = do
 -- printB :: B.ByteString -> IO ()
 -- printB = print
 
--- toBS :: ArrayBuffer -> B.ByteString
+toBS :: ArrayBuffer -> B.ByteString
 toBS = Buffer.toByteString 0 Nothing . Buffer.createFromArrayBuffer
 -- toBS1 = Buffer.toByteString 0 Nothing
 
@@ -234,12 +235,11 @@ webSocketSend ws bs | B.length bs == 0 = return ()
 
 foreign import javascript safe "new DataView($3,$1,$2)" js_dataView :: Int -> Int -> JSVal -> JSVal
 
--- Temporary fix till this is sorted out: https://github.com/ghcjs/ghcjs-base/issues/60
 getDataFixed :: MessageEvent -> Either String B.ByteString -- MessageEventData
 getDataFixed me = case js_getData me of
                 (# 1#, r #) -> Left "Unexpected String"
                 (# 2#, r #) -> Left "Unexpected Blob"
-                (# 3#, r #) -> Right $ toBS r -- ArrayBufferData ArrayBuffer -- (SomeArrayBuffer r)
+                (# 3#, r #) -> Right $ toBS r
 {-# INLINE getDataFixed #-}
 
 foreign import javascript unsafe
@@ -257,13 +257,13 @@ foreign import javascript unsafe
     js_asArrayBuffer :: WebSocket -> IO ()
 
 #else
--- GHC Version
+------------ GHC Version
 import qualified Network.WebSockets       as WS
 
 -- |Run a WebSockets Application, keep connection alive.
 -- Automatically close sockets on App exit
-runWSClient :: Config -> WSApp r -> IO r
-runWSClient cfg app =
+runWSApp :: Config -> WSApp r -> IO r
+runWSApp cfg app =
      WS.runClientWith (cfgIP cfg) (cfgPort cfg) (cfgPath cfg) opts [("Sec-WebSocket-Protocol", chatsProtocol)] $ \conn -> do
        -- WS.forkPingThread conn 20 -- Keep connection alive avoiding timeouts (FIX: the server should send pings as this is required by browsers)
        --WS.sendClose conn (1000::Int)

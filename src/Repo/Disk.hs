@@ -1,14 +1,13 @@
-module Repo.Disk where
--- -- import qualified Data.Map   as M
+-- |Persistent on-disk implementation of a repository of absolute types
+module Repo.Disk(dbRepo) where
+import           Repo.DB
 import qualified Repo.Types as R
--- -- import Data.IORef
-import ZM
-import Repo.DB
+import           ZM
 
 dbRepo dir = do
   db <- openDB dir
   --dbgS (stateDir cfg)
-  return $ R.Repo {
+  return R.Repo {
         R.get = \ref -> do
             mr <- getDB db ref
             --print (unwords ["get",show ref,show mr])

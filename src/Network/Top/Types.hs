@@ -1,95 +1,135 @@
-{-# LANGUAGE CPP #-}
-{-# LANGUAGE DeriveAnyClass #-}
-{-# LANGUAGE DeriveFoldable #-}
-{-# LANGUAGE DeriveFunctor #-}
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE CPP                       #-}
+{-# LANGUAGE DeriveAnyClass            #-}
+{-# LANGUAGE DeriveFoldable            #-}
+{-# LANGUAGE DeriveFunctor             #-}
+{-# LANGUAGE DeriveGeneric             #-}
 {-# LANGUAGE NoMonomorphismRestriction #-}
+{-# LANGUAGE OverloadedStrings         #-}
 
 #if __GLASGOW_HASKELL__ >= 800
-{-# LANGUAGE DeriveLift #-}
-{-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE DeriveLift                #-}
+{-# LANGUAGE StandaloneDeriving        #-}
 #else
-{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TemplateHaskell           #-}
 #endif
 module Network.Top.Types(
-  module ZM
-  ,Config(..),cfgIP,cfgPort,cfgPath
-  ,Connection(..),inputWithTimeout,App
-  ,WSConnection,WSApp
-  ,def
-  ,ByType(..)
+  -- *Top access point configuration
+  Config(..),cfgIP,cfgPort,cfgPath,def
+
+  -- *Connection Protocols
+  --,byPattern
+  ,ByPattern(..)
+  ,ByType(..),byTypeRouter
   ,ByAny(..),byAny
   ,Echo(..)
-  --,ByPattern(..)
-  --,byPattern
-  ,L.ByteString,ChannelSelectionResult(..),WebSocketAddress(..),SocketAddress(..),IP4Address(..),IP6Address,HostAddress(..)
---  ,module Data.Pattern
-  ,chatsProtocol,chatsProtocolT,WSChannelResult
+
+  -- *Connection
+  ,App
+  ,Connection(..)
+  ,inputWithTimeout
+
+  -- *WebSocket Connection
+  ,WSApp
+  ,WSConnection
+  ,chatsProtocol,chatsProtocolT
+
+  -- *RSP
+  ,WSChannelResult
+  ,ChannelSelectionResult(..)
+
+  -- *Network Addresses
+  ,WebSocketAddress(..),SocketAddress(..),IP4Address(..),IP6Address,HostAddress(..)
+
+  -- *Re-exports
+  -- ,module ZM
+  -- ,B.ByteString
   ) where
 
--- import Data.ByteString(ByteString)
-import qualified Data.ByteString as B
-import qualified Data.ByteString.Lazy   as L
+import qualified Data.ByteString                as B
 import           Data.Default.Class
--- import           Data.Functor.Invariant
+import           Data.List
 import           Data.Pattern.Types
-import           Data.Text              (Text)
-import qualified Data.Text              as T
-import           ZM
-import           Data.Word
+import           Data.Text                      (Text)
+import qualified Data.Text                      as T
 import           Data.Text.Encoding
-import           System.Timeout
+import           Data.Word
 import           Network.Top.Util
+import           System.Timeout
+import           Text.PrettyPrint.HughesPJClass (text)
+import           ZM
+
 #if __GLASGOW_HASKELL__ < 800
 import           Language.Haskell.TH.Lift
 #else
-import           Language.Haskell.TH.Syntax (Lift,lift)
+import           Language.Haskell.TH.Syntax (Lift) -- ,lift)
 #endif
-import           Text.PrettyPrint.HughesPJClass(text)
--- import           Data.Pattern.TH(asPattern)
-import           Data.List
--- import Data.Pattern.Transform
 
--- |General client configuration (ip,port and path of the Top access point)
-data Config = Config {accessPoint::WebSocketAddress IP4Address}
+-- |Top's access point configuration
+newtype Config = Config {accessPoint::WebSocketAddress IP4Address}
 
+-- |Return Top's access point IP
 cfgIP :: Config -> String
 cfgIP = prettyShow . socketAddress . host . accessPoint
 
+-- |Return Top's access point Port
 cfgPort :: Config -> Int
 cfgPort = fromIntegral . port . socketPort . host . accessPoint
 
+-- |Return Top's access point Path
 cfgPath :: Config -> String
 cfgPath = path . accessPoint
-
-chatsProtocol :: B.ByteString
-chatsProtocol = encodeUtf8 chatsProtocolT
-
-chatsProtocolT :: T.Text
-chatsProtocolT = "chats"
 
 -- |The configuration for the default Top router
 instance Default Config where
   def = Config $ WebSocketAddress False (SocketAddress (DNSAddress "quid2.net") (HostPort 80)) "/ws"
 
--- |A typed connection
--- data Connection a = Connection WS.Connection
+---------------- Routing Protocols
 
--- CHECK: use Input/Output from pipes-concurrency instead?
--- data WSConnection = WSConnection {sendMsg :: L.ByteString -> IO (),receiveMsg :: IO L.ByteString}
-type WSConnection = Connection L.ByteString
+-- |Return the value of the ByType router identifier for the given type
+byTypeRouter :: Type AbsRef -> TypedBLOB
+byTypeRouter t =
+  let TypeApp f _ = absType (Proxy::Proxy (ByType ()))
+  in typedBLOB_ (TypeApp f t) ByType
 
--- data Connection a = Connection {
---    -- |Block read till a value is received
---    -- returns Nothing if the connection is closed
---    input::IO (Maybe a)
+-- |Echo protocol: any value sent in is returned verbatim to the sender (useful for testing purposes)
+-- Client can specify if received messages should be logged (for debugging purposes)
+data Echo a = Echo { echoDebug :: Bool }
+            deriving (Eq, Ord, Show, Generic, Flat)
+instance Model a => Model (Echo a)
 
---    -- |Output a value
---    -- returns True if output succeeded, False otherwise
---    ,output::a -> IO Bool
---  }
+{-|
+A routing protocol specified by a type.
 
+Once a connection is established, clients:
+   * can send messages of the given type
+   * receive all messages of the same type sent by other agents
+-}
+data ByType a = ByType
+  deriving (Eq, Ord, Show, Generic, Flat)
+instance Model a =>  Model (ByType a)
+
+{-|
+A routing protocol to receive all messages.
+
+The ByAny type parameter indicates the type of the messages exchanged on the channel (usually:TypedBLOB).
+
+Once a connection is established, clients:
+   * can send messages of any type, as values of the ByAny type argument (for example: an Int value encoded as the corresponding TypedBLOB value)
+   * receive all messages sent by other agents
+-}
+data ByAny a = ByAny deriving (Eq, Ord, Show, Generic, Flat)
+instance Model a =>  Model (ByAny a)
+
+-- |Shortcut to specify
+byAny :: ByAny TypedBLOB
+byAny = ByAny :: ByAny TypedBLOB
+
+---------- Connection
+
+-- |An application that connects to a channel of type a and eventually returns an IO r
+type App a r = Connection a -> IO r
+
+-- |A typed bidirectional connection/channel
 data Connection a = Connection {
    -- |Block read till a value is received
    input::IO a
@@ -101,55 +141,40 @@ data Connection a = Connection {
    ,close :: IO ()
  }
 
--- NOTE: In case of timeout, this will cause the connection to close as well.
+-- |Return a value received on the connection
+-- or Nothing if no value is received in the specified number of seconds
+-- NOTE: In case of timeout, this will cause the connection to close.
 inputWithTimeout :: Int -> Connection a -> IO (Maybe a)
 inputWithTimeout secs conn = timeout (seconds secs) (input conn)
 
--- instance Invariant Conn where
---   invmap _ _ ConnOpening = ConnOpening
---   invmap f g (ConnOpen i o) = ConnOpen (fmap f i) (o . g)
---   invmap _ _ ConnClosed = ConnClosed
-
--- |An application that connects to a channel of type a and eventually returns an IO r
-type App a r = Connection a -> IO r
+---------- WebSocket Connection
 
 -- |An application that connects to a WebSocket channel of type a and eventually returns an IO r
-type WSApp r = App L.ByteString r
+type WSApp r = App B.ByteString r
 
--- combine:: Connection a -> Connection b -> Connection (Either a b)
--- combine c1 c2 = Connection ci co
---   where
---     ci = do -- BAD: this blocks on the first connection
---       i1 <- input c1
---       case i1 of
---         Nothing -> (Right <$>) <$> input c2
---         Just v  -> return . Just . Left $ v
---     co (Left a)  = output c1 a
---     co (Right b) = output c2 b
+-- A typed connection
+-- data Connection a = Connection WS.Connection
 
----------------- Routers
+-- CHECK: use Input/Output from pipes-concurrency instead?
+-- data WSConnection = WSConnection {sendMsg :: B.ByteString -> IO (),receiveMsg :: IO B.ByteString}
+type WSConnection = Connection B.ByteString
 
--- |Echo router: any value sent in is returned verbatim to the sender (for testing purposes only)
--- Client can specify if received messages should be logged (for debugging purposes)
-data Echo a = Echo { echoDebug :: Bool }
-  deriving (Eq, Ord, Show, Generic, Flat)
-instance Model a => Model (Echo a)
+-- data Connection a = Connection {
+--    -- |Block read till a value is received
+--    -- returns Nothing if the connection is closed
+--    input::IO (Maybe a)
 
--- |A router indexed by type:
--- Clients:
--- send messages of the given type
--- receive all messages of the same type sent by other agents
-data ByType a = ByType
-  deriving (Eq, Ord, Show, Generic, Flat)
-instance Model a =>  Model (ByType a)
+--    -- |Output a value
+--    -- returns True if output succeeded, False otherwise
+--    ,output::a -> IO Bool
+--  }
 
 
--- The type parameter indicates the type used to return the values (for example:TypedBLOB)
-data ByAny a = ByAny deriving (Eq, Ord, Show, Generic, Flat)
-instance Model a =>  Model (ByAny a)
+---------- RSP
 
-byAny = ByAny :: ByAny TypedBLOB
+type WSChannelResult = ChannelSelectionResult (WebSocketAddress IP4Address)
 
+-- |The value returned by an access point, after receiving a routing channel setup request.
 data ChannelSelectionResult addr =
                                  -- |The channel has been permanently setup to the requested
                                  -- protocol
@@ -157,7 +182,7 @@ data ChannelSelectionResult addr =
                                  |
                                  -- |The access point is unable or unwilling to open a connection
                                  -- with the requested routing protocol
-                                  Failure { reason :: Text }
+                                  Failure { reason :: String }
                                  |
                                  -- |User should retry with the same transport protocol at the
                                  -- indicated address
@@ -165,7 +190,14 @@ data ChannelSelectionResult addr =
   deriving (Eq, Ord, Show, Generic, Flat)
 instance Model a => Model (ChannelSelectionResult a)
 
-type WSChannelResult = ChannelSelectionResult (WebSocketAddress IP4Address)
+-- |CHATS binary identifier
+chatsProtocol :: B.ByteString
+chatsProtocol = encodeUtf8 chatsProtocolT
+
+chatsProtocolT :: T.Text
+chatsProtocolT = "chats"
+
+---------- Network Addresses
 
 -- |The full address of a <https://en.wikipedia.org/wiki/WebSocket WebSocket> endpoint
 data WebSocketAddress ip =
@@ -186,18 +218,23 @@ data SocketAddress ip = SocketAddress { socketAddress :: HostAddress ip, socketP
   deriving (Eq, Ord, Show, Generic, Flat)
 instance Model ip => Model (SocketAddress ip)
 
+-- |A Sockets port (e.g. 80)
 data HostPort = HostPort {port::Word16} deriving (Eq, Ord, Show, Generic,Flat,Model)
 
+-- |A host address, either an IP or a DNS domain
 data HostAddress ip = IPAddress ip
                     | DNSAddress String
   deriving (Eq, Ord, Show, Generic, Flat)
 instance Model ip => Model (HostAddress ip)
 
+-- |An IP4 address
 data IP4Address = IP4Address Word8 Word8 Word8 Word8 deriving (Eq, Ord, Show, Generic, Flat, Model)
 
+-- |A IP6 address
 data IP6Address = IP6Address Word16 Word16 Word16 Word16 Word16 Word16 Word16 Word16 deriving (Eq, Ord, Show, Generic, Flat, Model)
 
--- Easier to define here than in separate file
+---------- Pretty instances
+-- Easier to define here than in a separate file
 instance Pretty IP4Address where
   pPrint (IP4Address w1 w2 w3 w4) = text . intercalate "." . map hex $ [w1, w2, w3, w4]
 
@@ -205,6 +242,8 @@ instance Pretty ip => Pretty (HostAddress ip) where
   pPrint (IPAddress ip) = pPrint ip
   pPrint (DNSAddress t) = text t
 
+
+-- Lift instances (needed by TH)
 #if __GLASGOW_HASKELL__ < 800
 --deriveLift ''ByPattern
 --deriveLift ''Match
@@ -223,3 +262,24 @@ deriving instance Lift a => Lift (Pat a)
 deriving instance Lift PRef
 #endif
 
+-- Call/Return protocol
+-- data Call a = Call a CallBack
+--             | Return CallBack a
+-- type CallBack = [Word8]
+
+-- instance Invariant Conn where
+--   invmap _ _ ConnOpening = ConnOpening
+--   invmap f g (ConnOpen i o) = ConnOpen (fmap f i) (o . g)
+--   invmap _ _ ConnClosed = ConnClosed
+
+
+-- combine:: Connection a -> Connection b -> Connection (Either a b)
+-- combine c1 c2 = Connection ci co
+--   where
+--     ci = do -- BAD: this blocks on the first connection
+--       i1 <- input c1
+--       case i1 of
+--         Nothing -> (Right <$>) <$> input c2
+--         Just v  -> return . Just . Left $ v
+--     co (Left a)  = output c1 a
+--     co (Right b) = output c2 b

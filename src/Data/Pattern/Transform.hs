@@ -3,6 +3,7 @@
 {-# LANGUAGE FlexibleInstances         #-}
 {-# LANGUAGE NoMonomorphismRestriction #-}
 {-# LANGUAGE ScopedTypeVariables       #-}
+-- |Convert an Haskell pattern to the form accepted by ByPattern channels
 module Data.Pattern.Transform (byPattern, byPattern_) where
 
 import qualified Data.Flat.Bits       as V
@@ -14,10 +15,12 @@ import           Data.Pattern.Util
 import           ZM           hiding (Name)
 import           Data.Word
 
--- Convert haskell pattern to the simpler form accepted by ByPattern channels
+-- |Convert an Haskell pattern to the form accepted by ByPattern channels
+-- or throw an error if conversion fails
 byPattern :: forall a. Model a => Pat PRef -> ByPattern a
 byPattern = either error id . byPattern_
 
+-- |Convert an Haskell pattern to the form accepted by ByPattern channels
 byPattern_ :: forall a. Model a => Pat PRef -> Either String (ByPattern a)
 byPattern_ pat =
   let tm = absTypeModel (Proxy :: Proxy a)
@@ -27,7 +30,7 @@ byPattern_ pat =
       conv (PCon n ps) (ct,t) =
         case constructorInfo (L.fromString n) ct of
           Nothing -> err ["Constructor '"++ n ++"' not present in",show t]
-          Just (bs,ts) | length ts == length ps -> Right (MatchValue bs) : concatMap (uncurry conv) (zip ps $ map solveCons ts)
+          Just (bs,ts) | length ts == length ps -> Right (MatchValue . map boolToBit $ bs) : concatMap (uncurry conv) (zip ps $ map solveCons ts)
                        | otherwise -> err ["Constructor",n,"has",show (length ts),"parameters, found",show (length ps)]
 
       conv (PName (PInt i)) (_,t) | t==word8Type = val (fromIntegral i::Word8)
@@ -62,6 +65,9 @@ byPattern_ pat =
   in ByPattern . optPattern <$> collectErrors (conv pat (solveCons (typeName tm)))
 
      where
-       val a = [Right . MatchValue . V.toBools . V.bits $ a]
+       val a = [Right . MatchValue . map boolToBit . V.toBools . V.bits $ a]
        err ls = [Left . unwords $ ls]
        terr expType r = err ["Type mismatch: expected",show expType,"type, found",show r]
+
+boolToBit False = V0
+boolToBit True = V1

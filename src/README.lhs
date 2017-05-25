@@ -10,6 +10,12 @@ Except, now that you make me think about it, this is exactly how information is 
 
 Someone had to fix the problem, patiently reorganising the Internet library by type and subject, and in fact [someone](http://google.com) did and, as reward for their efforts, even managed to make a [little dough](http://finance.yahoo.com/q?s=GOOG) out of it. Who said that being a good librarian doesn't pay the bills?
 
+<!--
+The root of the problem, as Confucius had figured out so many centuries ago ([*If names be not correct ... affairs cannot be carried on to success.*](https://en.wikipedia.org/wiki/Rectification_of_names#Confucius)), is that the *names* used on the Internet denote the 'wrong' thing.
+
+The basic *name* on the Internet is an address (a numeric IP or a symbolic DNS domain). An address denote an agent, a receiver or producer of information, but there are no names that denote *types* of information. The As a
+-->
+
 The root of the problem is the way information is accessed and transferred on the Internet. The communication protocol at the heart of the Web, the [HTTP](https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol), as in fact those of most widely used Internet systems, is a point-to-point protocol.
 
 Point-to-point simply means that information flows from A to B where A and B are publishers and/or consumers of information. It is the simplest but not always the most convenient form of communication as it's often the case that A does not in fact want to communicate with B at all, but would rather talk about *something* or exchange some specific *type* of information.
@@ -19,15 +25,14 @@ Say for example that you have some excellent jokes that you would be willing to 
 We might define a joke, in a very simple way, as:
 
 ```haskell
-data Joke = Joke Text
+Joke ≡ Joke Text
 ````
-
 that basically means: 'a joke is just a text marked as being a joke'.
 
-And then we could simply start sending out jokes by writing a little program that says:
+And then we could simply start sending out jokes by writing a little program that says something like:
 
 ```haskell
-jokesChannel <- openChannel Joke
+jokesChannel <- openChannelOfType Joke
 
 send jokesChannel (Joke "Notice on an Italian bus: don’t talk to the driver, he needs his hands.")
 ```
@@ -35,7 +40,7 @@ Funny eh :-)?
 
 Maybe not, but that's not a problem, you are free to send out your own jokes.
 
-Because what we have just done, by the simple act of defining some type of information and sending out an item of that type, is to create a big fat global channel where jokes of all kinds can now flow.
+Because what we have just done, by the simple act of defining some type of information and sending out an item of that type, is to create a big fat global channel where jokes can now flow.
 
 And that's precisely how Top, the type oriented protocol, works.
 

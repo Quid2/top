@@ -1,13 +1,14 @@
-{-# LANGUAGE NoMonomorphismRestriction #-}
-{-# LANGUAGE OverloadedStrings         #-}
-{-# LANGUAGE ScopedTypeVariables       #-}
 {-# LANGUAGE CPP                       #-}
 {-# LANGUAGE ForeignFunctionInterface  #-}
 {-# LANGUAGE GHCForeignImportPrim      #-}
 {-# LANGUAGE JavaScriptFFI             #-}
+{-# LANGUAGE NoMonomorphismRestriction #-}
+{-# LANGUAGE OverloadedStrings         #-}
+{-# LANGUAGE ScopedTypeVariables       #-}
 
 module Network.Top.Util(
-  -- *Logging utilities
+
+  -- *Logging (with ghcjs support)
   dbg,warn,info,err,dbgS,logLevel
 #ifdef ghcjs_HOST_OS
   ,Priority(..)
@@ -15,25 +16,35 @@ module Network.Top.Util(
   ,logLevelOut
   ,module X
 #endif
-  ,eitherToMaybe--,isRight
-  ,liftIO,forever,when,unless,strictTry,try,tryE,forceE,SomeException
-  ,async,cancel
-  ,threadDelay
-  -- *Time 
-  ,milliseconds,seconds,minutes
-  ) where
 
-import           Control.Concurrent        (threadDelay)
-import           Control.Concurrent.Async  (async, cancel)
-import           Control.Exception         (SomeException, try)
+  -- *Exceptions
+  ,strictTry,try,tryE,forceE,SomeException
+  ,eitherToMaybe,withTimeout
+
+  -- *Time
+  ,milliseconds,seconds,minutes
+
+  -- *Threads
+  ,async,cancel,threadDelay
+
+  -- *Monads
+  ,liftIO,forever,when,unless,
+
+) where
+
+import           Control.Concurrent       (threadDelay)
+import           Control.Concurrent.Async (async, cancel)
+import           Control.DeepSeq
+import           Control.Exception        (SomeException, try)
+import qualified Control.Exception        as E
 import           Control.Monad
 import           Control.Monad.IO.Class
-import           GHC.IO.Handle             (Handle)
-import Control.DeepSeq
-import qualified Control.Exception as E 
+import           GHC.IO.Handle            (Handle)
+import           System.Timeout
 
 #ifdef ghcjs_HOST_OS
--- GHC-JS Version
+
+------------ GHC-JS Version
 import Data.IORef
 import System.IO.Unsafe
 import qualified Data.JSString as S
@@ -77,8 +88,7 @@ err :: [String] -> IO ()
 err = cerr . S.pack . unwords
 
 #else
--- GHC Version
-
+------------ GHC Version
 import           System.Log.Handler.Simple (verboseStreamHandler)
 import           System.Log.Logger         as X
 
@@ -108,15 +118,28 @@ info :: MonadIO m => [String] -> m ()
 info = liftIO . infoM "top" . unwords
 #endif
 
+-- Common utilities 
+
 forceE :: Either String c -> c
 forceE = either error id -- throwIO
 
 tryE :: IO a -> IO (Either SomeException a)
 tryE = try
 
+strictTry :: NFData a => IO a -> IO (Either E.SomeException a)
+strictTry op = E.catch (op >>= \v -> return . Right $! deepseq v v) (\(err:: E.SomeException) -> return . Left $ err)
+
 eitherToMaybe :: Either t a -> Maybe a
 eitherToMaybe (Right a) = Just a
 eitherToMaybe (Left _) = Nothing
+
+withTimeout :: Int -> IO a -> IO (Either String a)
+-- withTimeout secs op = maybe (Left "Timeout") Right <$> timeout (seconds secs) op
+withTimeout secs op = do
+  em <- try $ timeout (seconds secs) op
+  return $ case em of
+    Left (e::SomeException) -> Left (show e)
+    Right m -> maybe (Left "Timeout") Right m
 
 --isRight :: Either t t1 -> Bool
 -- isRight (Right _) = True
@@ -131,5 +154,3 @@ seconds = (* 1000000)
 milliseconds :: Num a => a -> a
 milliseconds = (* 1000)
 
-strictTry :: NFData a => IO a -> IO (Either E.SomeException a)
-strictTry op = E.catch (op >>= \v -> return . Right $! deepseq v v) (\(err:: E.SomeException) -> return . Left $ err)
