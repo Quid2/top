@@ -1,4 +1,4 @@
--- |Top connections as Pipes
+-- |Access Top connections as Pipes
 module Network.Top.Pipes (
     pipeIn,
     pipeOut,

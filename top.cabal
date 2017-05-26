@@ -1,5 +1,5 @@
 name: top
-version: 0.1.1
+version: 0.2
 synopsis: Top (typed oriented protocol) API
 description: See the <http://github.com/tittoassini/top online tutorial>.
 homepage: http://github.com/tittoassini/top
@@ -38,7 +38,7 @@ library
             websockets >=0.9.8.2,
             hslogger >=1.2.10,
             acid-state >=0.14.2,
-            safecopy >=0.9.3.2,
+            safecopy >=0.9.3,
             filepath >=1.4.0.0
     exposed-modules:
         Data.Pattern
@@ -56,7 +56,7 @@ library
         Repo.Types
         Repo.Memory
     build-depends:
-        async >=2.1.1.1,
+        async >=2.1.1,
         base >=4.7 && <5,
         bytestring >=0.10.6.0,
         data-default-class >=0.0.1,

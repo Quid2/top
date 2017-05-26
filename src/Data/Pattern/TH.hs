@@ -23,17 +23,17 @@ patternE pat = asPatternM pat >>= lift
 -- |Template Haskell function to convert an Haskell pattern to an `IPattern`
 --
 -- @
--- patternQ [p|_|] :: IO (Pat PRef)
+-- patternQ [p|_|] :: IO IPattern
 -- PName PWild
 -- @
 --
-patternQ :: Quasi m => Q TH.Pat -> m (Pat PRef)
+patternQ :: Quasi m => Q TH.Pat -> m IPattern
 patternQ = runQ . asPatternM
 
-asPatternM  :: Monad m =>  m TH.Pat -> m (Pat PRef)
+asPatternM  :: Monad m =>  m TH.Pat -> m IPattern
 asPatternM = (conv <$>)
   where
-    conv :: TH.Pat -> Pat PRef
+    conv :: TH.Pat -> IPattern
     conv pat = case pat of
       ConP n [] | name n == "[]" -> PCon "Nil" []
 

@@ -5,7 +5,8 @@ import           Repo.DB
 import qualified Repo.Types as R
 import           ZM
 
-dbRepo :: FilePath -> IO R.Repo
+dbRepo :: FilePath   -- ^Directory to store the repo (e.g. \"/tmp\")
+       -> IO R.Repo  -- ^A new repository
 dbRepo dir = do
   db <- openDB dir
   return R.Repo {

@@ -36,11 +36,6 @@ type RefSolver = AbsRef -> IO (Either RepoError AbsADT)
 type RepoError = String -- SomeException
 
 -- |Permanently record an ADT definition
---
--- @
--- recordType def (Proxy :: Proxy Bool)
--- @
---
 recordType :: Model a => Config -> Proxy a -> IO ()
 recordType cfg proxy = runApp cfg ByType $ \conn -> mapM_ (output conn . Record) . absADTs $ proxy
 

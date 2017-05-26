@@ -4,7 +4,7 @@
 {-# LANGUAGE NoMonomorphismRestriction #-}
 {-# LANGUAGE ScopedTypeVariables       #-}
 
--- |Convert an Haskell pattern to the form accepted by ByPattern channels
+-- |Convert an Haskell pattern to the corresponding `ByPattern` channel identifier
 module Data.Pattern.Transform (byPattern, byPattern_) where
 
 import qualified Data.Flat.Bits       as V
@@ -13,16 +13,16 @@ import qualified Data.ListLike.String as L
 import qualified Data.Map             as M
 import           Data.Pattern.Types
 import           Data.Pattern.Util
-import           ZM           hiding (Name)
 import           Data.Word
+import           ZM                   hiding (Name)
 
--- |Convert an Haskell pattern to the form accepted by ByPattern channels
+-- |Convert an Haskell pattern to the corresponding `ByPattern` channel identifier
 -- or throw an error if conversion fails
-byPattern :: forall a. Model a => Pat PRef -> ByPattern a
+byPattern :: forall a. Model a => IPattern -> ByPattern a
 byPattern = either error id . byPattern_
 
--- |Convert an Haskell pattern to the form accepted by ByPattern channels
-byPattern_ :: forall a. Model a => Pat PRef -> Either String (ByPattern a)
+-- |Convert an Haskell pattern to the corresponding `ByPattern` channel identifier
+byPattern_ :: forall a. Model a => IPattern -> Either String (ByPattern a)
 byPattern_ pat =
   let tm = absTypeModel (Proxy :: Proxy a)
       ctMap = typeTree tm
@@ -71,4 +71,4 @@ byPattern_ pat =
        terr expType r = err ["Type mismatch: expected",show expType,"type, found",show r]
 
 boolToBit False = V0
-boolToBit True = V1
+boolToBit True  = V1

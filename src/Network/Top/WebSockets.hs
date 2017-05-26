@@ -8,11 +8,13 @@
 {-# LANGUAGE ScopedTypeVariables       #-}
 {-# LANGUAGE UnboxedTuples             #-}
 {-# LANGUAGE UnliftedFFITypes          #-}
+
+-- |WebSockets Connection (with GHCJS native support)
 module Network.Top.WebSockets(
   runWSApp
   ) where
 
-import qualified Data.ByteString                   as B
+import qualified Data.ByteString   as B
 import           Network.Top.Types
 
 #ifdef ghcjs_HOST_OS
@@ -45,14 +47,15 @@ import           Network.Top.Util
 runWSApp :: Config -> WSApp r -> IO r
 runWSApp cfg = bracket (newConnection cfg) close
 
+-- |A WS connection
+data Conn a = Conn {connConfig:: Config
+                   ,connStatus :: S.TVar (ConnStatus a)
+                   ,connMessages :: S.TQueue a}
+
 -- |Connection Status
 data ConnStatus a = ConnOpening
                   | ConnOpen {inp::IO a,out::a -> IO (),cls::IO ()}
                   | ConnClosed -- is this needed?
-
-data Conn a = Conn {connConfig:: Config
-                   ,connStatus :: S.TVar (ConnStatus a)
-                   ,connMessages :: S.TQueue a}
 
 newConnection :: Config -> IO WSConnection
 newConnection cfg = do
@@ -261,8 +264,12 @@ foreign import javascript unsafe
 import qualified Network.WebSockets       as WS
 
 -- |Run a WebSockets Application, keep connection alive.
--- Automatically close sockets on App exit
-runWSApp :: Config -> WSApp r -> IO r
+--
+-- Automatically close sockets on WSApp exit
+runWSApp ::
+            Config    -- ^ Top configuration
+         -> WSApp a   -- ^ Application to connect
+         -> IO a      -- ^ Value returned from the application
 runWSApp cfg app =
      WS.runClientWith (cfgIP cfg) (cfgPort cfg) (cfgPath cfg) opts [("Sec-WebSocket-Protocol", chatsProtocol)] $ \conn -> do
        -- WS.forkPingThread conn 20 -- Keep connection alive avoiding timeouts (FIX: the server should send pings as this is required by browsers)

@@ -12,6 +12,7 @@
 #else
 {-# LANGUAGE TemplateHaskell           #-}
 #endif
+
 module Network.Top.Types(
   -- *Top access point configuration
   Config(..),cfgIP,cfgPort,cfgPath,def
@@ -33,7 +34,7 @@ module Network.Top.Types(
   ,WSConnection
   ,chatsProtocol,chatsProtocolT
 
-  -- *RSP
+  -- *CHATS
   ,WSChannelResult
   ,ChannelSelectionResult(..)
 
@@ -101,8 +102,10 @@ instance Model a => Model (Echo a)
 A routing protocol specified by a type.
 
 Once a connection is established, clients:
+
    * can send messages of the given type
-   * receive all messages of the same type sent by other agents
+
+   * will receive all messages of the same type sent by other agents
 -}
 data ByType a = ByType
   deriving (Eq, Ord, Show, Generic, Flat)
@@ -114,8 +117,10 @@ A routing protocol to receive all messages.
 The ByAny type parameter indicates the type of the messages exchanged on the channel (usually:TypedBLOB).
 
 Once a connection is established, clients:
+
    * can send messages of any type, as values of the ByAny type argument (for example: an Int value encoded as the corresponding TypedBLOB value)
-   * receive all messages sent by other agents
+
+   * will receive all messages sent by other agents
 -}
 data ByAny a = ByAny deriving (Eq, Ord, Show, Generic, Flat)
 instance Model a =>  Model (ByAny a)
@@ -143,7 +148,8 @@ data Connection a = Connection {
 
 -- |Return a value received on the connection
 -- or Nothing if no value is received in the specified number of seconds
--- NOTE: In case of timeout, this will cause the connection to close.
+--
+-- NOTE: In case of timeout, the connection will be closed.
 inputWithTimeout :: Int -> Connection a -> IO (Maybe a)
 inputWithTimeout secs conn = timeout (seconds secs) (input conn)
 
@@ -157,6 +163,7 @@ type WSApp r = App B.ByteString r
 
 -- CHECK: use Input/Output from pipes-concurrency instead?
 -- data WSConnection = WSConnection {sendMsg :: B.ByteString -> IO (),receiveMsg :: IO B.ByteString}
+-- |A WebSocket connection
 type WSConnection = Connection B.ByteString
 
 -- data Connection a = Connection {
@@ -170,7 +177,7 @@ type WSConnection = Connection B.ByteString
 --  }
 
 
----------- RSP
+---------- CHATS protocol
 
 type WSChannelResult = ChannelSelectionResult (WebSocketAddress IP4Address)
 
@@ -194,6 +201,7 @@ instance Model a => Model (ChannelSelectionResult a)
 chatsProtocol :: B.ByteString
 chatsProtocol = encodeUtf8 chatsProtocolT
 
+-- |CHATS textual identifier
 chatsProtocolT :: T.Text
 chatsProtocolT = "chats"
 
@@ -230,7 +238,7 @@ instance Model ip => Model (HostAddress ip)
 -- |An IP4 address
 data IP4Address = IP4Address Word8 Word8 Word8 Word8 deriving (Eq, Ord, Show, Generic, Flat, Model)
 
--- |A IP6 address
+-- |An IP6 address
 data IP6Address = IP6Address Word16 Word16 Word16 Word16 Word16 Word16 Word16 Word16 deriving (Eq, Ord, Show, Generic, Flat, Model)
 
 ---------- Pretty instances

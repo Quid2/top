@@ -36,26 +36,28 @@ type Matcher = B.ByteString -> Bool
 A routing protocol specified by a pattern and a type.
 
 Once a connection is established, clients:
+
    * can send messages of the given type
-   * receive all messages of the same type, that match the given pattern, sent by other agents
+
+   * will receive all messages of the same type, that match the given pattern, sent by other agents
 -}
 newtype ByPattern a = ByPattern Pattern
   deriving (Eq, Ord, Show, Generic, Flat)
 instance Model a => Model (ByPattern a)
 
--- |A Pattern is just a list of matches
+-- |A Pattern is just a list of matches, values are represented by their Flat binary serialisation
 type Pattern = [Match [Bit]]
 -- instance Flat [Match [Bit]]
 
 -- |Match either a flattened value of any value of a given type
-data Match v = MatchValue v            -- ^Match a flattened value
+data Match v = MatchValue v            -- ^Match the specified value
              | MatchAny (Type AbsRef)  -- ^Match any value of the given type (wildcard)
   deriving (Show, Eq, Ord, Generic, Flat,Functor)
 
 instance Model v => Model (Match v)
 
--- |Optimise a Pattern by concatenating adjacent flat value matches
-optPattern :: [Match [a]] -> [Match [a]]
+-- |Optimise a Pattern by concatenating adjacent value matches
+optPattern :: Pattern -> Pattern
 optPattern (MatchValue []:t) = optPattern t
 optPattern (MatchValue bs:MatchValue bs':t) = optPattern $ MatchValue (bs ++ bs'):t
 optPattern (x:xs) = x : optPattern xs
@@ -67,10 +69,11 @@ type IPattern = Pat PRef
 -- |Pattern representation used for internal processing
 data Pat v =
   -- |A constructor
-  PCon  {pConsName::String    -- ^Name of the constructor (e.g. "True")
-        ,pConsParameters::[Pat v]}
+  PCon  {pConsName::String         -- ^Name of the constructor (e.g. "True")
+        ,pConsParameters::[Pat v]  -- ^Constructor parameters
+        }
 
-  -- |A primitive value (for example PRef)
+  -- |A primitive value (for example `PRef`)
   | PName v
 
   deriving (Eq, Ord, Show)

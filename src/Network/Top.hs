@@ -1,4 +1,6 @@
-module Network.Top(module X) where
+module Network.Top (
+-- |Check the <https://github.com/tittoassini/top tutorial and github repo>.
+module X) where
 
 import           Data.Pattern           as X
 import           Network.Top.Pipes      as X
