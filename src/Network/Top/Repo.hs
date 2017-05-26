@@ -96,12 +96,6 @@ resolveRef_ cfg ref = runApp cfg ByType (flip resolveRef__ ref)
 resolveRef__ :: Connection RepoProtocol -> AbsRef -> IO (Either String AbsADT)
 resolveRef__ conn ref = checked $ resolveRef___ conn ref
 
-checked f = do
-  eer <- strictTry f
-  return $ case eer of
-    Left exp -> Left (show exp)
-    Right er -> er
-
 resolveRef___ :: Connection RepoProtocol -> AbsRef -> IO (Either String AbsADT)
 resolveRef___ conn ref = do
     output conn (Solve ref)
@@ -113,9 +107,10 @@ resolveRef___ conn ref = do
             Solved sref sadt | ref == sref && absRef sadt == sref -> return $ Right sadt
             _ -> loop
 
-    -- BUG: this returns an exception that is not captured
-    --fromMaybe (Left "Timeout") <$> withTimeout 25 loop
     join <$> withTimeout 25 loop
 
 absADTs :: Model a => Proxy a -> [AbsADT]
 absADTs = typeADTs . absTypeModel
+
+checked :: NFData b => IO (Either String b) -> IO (Either String b)
+checked f = either (Left . show) id <$> strictTry f

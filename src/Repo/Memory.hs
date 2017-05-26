@@ -6,6 +6,7 @@ import qualified Data.Map   as M
 import qualified Repo.Types as R
 import           ZM
 
+memRepo :: IO R.Repo
 memRepo = do
   db <- newIORef M.empty
   return $ R.Repo {

@@ -1,12 +1,13 @@
--- |Persistent on-disk implementation of a repository of absolute types
+-- |Persistent on-disk implementation of a repository of ZM types
 module Repo.Disk(dbRepo) where
+
 import           Repo.DB
 import qualified Repo.Types as R
 import           ZM
 
+dbRepo :: FilePath -> IO R.Repo
 dbRepo dir = do
   db <- openDB dir
-  --dbgS (stateDir cfg)
   return R.Repo {
         R.get = \ref -> do
             mr <- getDB db ref

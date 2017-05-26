@@ -6,6 +6,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TupleSections     #-}
+
 -- |Pattern related types
 module Data.Pattern.Types (
     Matcher,
@@ -18,6 +19,7 @@ module Data.Pattern.Types (
     optPattern,
 
     -- *Internal patterns
+    IPattern,
     Pat(..),
     PRef(..),
     --WildCard(..)
@@ -59,28 +61,30 @@ optPattern (MatchValue bs:MatchValue bs':t) = optPattern $ MatchValue (bs ++ bs'
 optPattern (x:xs) = x : optPattern xs
 optPattern [] = []
 
+-- |Internal pattern representation
+type IPattern = Pat PRef
+
 -- |Pattern representation used for internal processing
 data Pat v =
   -- |A constructor
-  PCon
-  String   -- Name of the constructor (e.g. "True")
-  [Pat v]  -- Patterns for the constructor parameters
+  PCon  {pConsName::String    -- ^Name of the constructor (e.g. "True")
+        ,pConsParameters::[Pat v]}
 
   -- |A primitive value (for example PRef)
   | PName v
 
-  deriving (Eq, Ord, Show, Generic, Flat)
+  deriving (Eq, Ord, Show)
 
-instance Model v => Model (Pat v)
+--instance Model v => Model (Pat v)
 
--- |Representation of literals and variables as returned by the Template Haskell pattern parser.
+-- |Literals and variables
 data PRef = PInt Integer
           | PRat Rational
           | PChar Char
           | PString String
           | PWild
           | PVar String
-  deriving (Eq, Ord, Show) -- , Generic, Flat, Model)
+  deriving (Eq, Ord, Show)
 
 -- -- |A Variable that can be either a name (e.g. "a") or a wildcard "_"
 -- data VarOrWild = V String

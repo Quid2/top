@@ -1,3 +1,9 @@
+[![Build Status](https://travis-ci.org/tittoassini/top.svg?branch=master)](https://travis-ci.org/tittoassini/top) [![Hackage version](https://img.shields.io/hackage/v/top.svg)](http://hackage.haskell.org/package/top)
+
+Haskell API for [Top (Type Oriented Protocol)](http://quid2.org/docs/Top.pdf).
+
+ ### Why Bother?
+
 Imagine visiting your favourite open shelf library or bookshop and discovering that overnight some ill-advised employee has reordered the whole collection by publishing house. All books from Oxford University Press or Penguin are now neatly grouped together.
 
 That would look nice and orderly for sure, with all those similarly designed book spines standing side by side.
@@ -46,7 +52,7 @@ And that's precisely how Top, the type oriented protocol, works.
 
  ### Top (Type Oriented Protocol)
 
-Top is a minimalist content-oriented transport protocol.
+Top is a minimalist content-oriented transport protocol ([spec](http://quid2.org/docs/Top.pdf)).
 
 In Top, all communication takes place on bi-directional *typed* channels, that's to say on channels that transfer only values of a well-defined algebraic data type.
 
@@ -56,7 +62,7 @@ You can [see it in action](http://quid2.org/app/ui).
 
 Under the *Channels* tab are listed the currently open channels, every channel has a type and you can see its full definition by clicking on *Definition*.
 
-Definitions are just plain algebraic data types [1].
+Definitions are just [plain algebraic data types](https://github.com/tittoassini/zm).
 
 For example, you should see a *Message* channel that is used to implement a simple chat system. Click on *Show Values* to inspect the value being transferred and then use the [chat user interface](http://quid2.org/app/chat) to login and send a couple of messages and see them appear on the channel.
 
@@ -66,15 +72,7 @@ Under the *Types* tab is the list of types known to the system.
 
 Top does not provide any other service beyond full-duplex typed communication, any other service (e.g. identification or encryption) has to be provided by the clients themselves but that can be done easily and independently by simply creating data types that stands for the additional functionality required.
 
- ### Haskell API
-
-This repo provides an Haskell API for Top.
-
-The API is compatible with both [ghc](https://www.haskell.org/ghc/) (tested with 7.10.3) and [ghcjs](https://github.com/ghcjs/ghcjs) so it can be used to develop both stand alone and WWW applications.
-
-Help in developing APIs for other programming languages would be greatly appreciated :-)
-
- #### Usage
+ ### Usage
 
 Using Top can be as simple as:
 
@@ -89,30 +87,15 @@ For examples of stand-alone and www applications see:
 
  #### Installation
 
-It is not yet on [hackage](https://hackage.haskell.org/) but you can use it in your [stack](https://docs.haskellstack.org/en/stable/README/) projects by adding in the `stack.yaml` file, under the `packages` section:
-
-````
-- location:
-    git: https://github.com/tittoassini/top
-    commit: 618fcab4c1bd87008f14ef1f199a5dee795f7045
-  extra-dep: true
-- location:
-    git: https://github.com/tittoassini/typed
-    commit: 00b39b1e94dc2a047e6371a1622c8ee411882efe
-  extra-dep: true
-- location:
-   git: https://github.com/tittoassini/flat
-   commit: 3771f5946dd506c6f199aa4047186d5b57bdce5f
-  extra-dep: true
-- location:
-   git: https://github.com/tittoassini/model
-   commit: b05a56a993213271e3b13d28a5e8bb90c9d8576f
-  extra-dep: true
-````
+ Get the latest stable version from [hackage](https://hackage.haskell.org/package/top).
 
  #### Compatibility
 
-Tested with [ghc](https://www.haskell.org/ghc/) 7.10.3 and 8.0.1.
+Tested with:
+  * [ghc](https://www.haskell.org/ghc/) 7.10.3, 8.0.1 and 8.0.2 (x64)
+  * [ghcjs](https://github.com/ghcjs/ghcjs)
+
+So it can be used to develop both stand alone and WWW applications.
 
  ### The Top Service.
 
@@ -124,8 +107,12 @@ TERMS OF SERVICE:
 * Fair usage is defined as any usage that does not lead to a *de facto* denial of service to other users or that imposes unreasonable expense on its maintainer.
 * By using the Top service you accept that the service is offered "as is" with no express or implied warranty for availability, performance, consistency, longevity or functionality.
 
+<!--
  #### Downtime
 The Top service might be down for upgrades every Monday between 7 and 8 am (UTC+1 [DST](https://en.wikipedia.org/wiki/Daylight_saving_time)).
 
  ### Notes
 [1] With a couple of restrictions: data types definitions cannot be mutually recursive and variables can appear only in kind * positions.
+
+-->
+

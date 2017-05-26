@@ -1,4 +1,10 @@
 
+[![Build Status](https://travis-ci.org/tittoassini/top.svg?branch=master)](https://travis-ci.org/tittoassini/top) [![Hackage version](https://img.shields.io/hackage/v/top.svg)](http://hackage.haskell.org/package/top)
+
+Haskell API for [Top (Type Oriented Protocol)](http://quid2.org/docs/Top.pdf).
+
+### Why Bother?
+
 Imagine visiting your favourite open shelf library or bookshop and discovering that overnight some ill-advised employee has reordered the whole collection by publishing house. All books from Oxford University Press or Penguin are now neatly grouped together.
 
 That would look nice and orderly for sure, with all those similarly designed book spines standing side by side.
@@ -11,6 +17,7 @@ Except, now that you make me think about it, this is exactly how information is 
 
 Someone had to fix the problem, patiently reorganising the Internet library by type and subject, and in fact [someone](http://google.com) did and, as reward for their efforts, even managed to make a [little dough](http://finance.yahoo.com/q?s=GOOG) out of it. Who said that being a good librarian doesn't pay the bills?
 
+
 The root of the problem is the way information is accessed and transferred on the Internet. The communication protocol at the heart of the Web, the [HTTP](https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol), as in fact those of most widely used Internet systems, is a point-to-point protocol.
 
 Point-to-point simply means that information flows from A to B where A and B are publishers and/or consumers of information. It is the simplest but not always the most convenient form of communication as it's often the case that A does not in fact want to communicate with B at all, but would rather talk about *something* or exchange some specific *type* of information.
@@ -20,29 +27,28 @@ Say for example that you have some excellent jokes that you would be willing to 
 We might define a joke, in a very simple way, as:
 
 ```haskell
-data Joke = Joke Text
+Joke ≡ Joke Text
 ````
-
 that basically means: 'a joke is just a text marked as being a joke'.
 
-And then we could simply start sending out jokes by writing a little program that says:
+And then we could simply start sending out jokes by writing a little program that says something like:
 
 ```haskell
-jokesChannel <- openChannel Joke 
+jokesChannel <- openChannelOfType Joke
 
 send jokesChannel (Joke "Notice on an Italian bus: don’t talk to the driver, he needs his hands.")
 ```
-Funny eh :-)? 
+Funny eh :-)?
 
 Maybe not, but that's not a problem, you are free to send out your own jokes.
 
-Because what we have just done, by the simple act of defining some type of information and sending out an item of that type, is to create a big fat global channel where jokes of all kinds can now flow.
+Because what we have just done, by the simple act of defining some type of information and sending out an item of that type, is to create a big fat global channel where jokes can now flow.
 
 And that's precisely how Top, the type oriented protocol, works.
 
 ### Top (Type Oriented Protocol)
 
-Top is a minimalist content-oriented transport protocol.
+Top is a minimalist content-oriented transport protocol ([spec](http://quid2.org/docs/Top.pdf)).
 
 In Top, all communication takes place on bi-directional *typed* channels, that's to say on channels that transfer only values of a well-defined algebraic data type.
 
@@ -52,7 +58,7 @@ You can [see it in action](http://quid2.org/app/ui).
 
 Under the *Channels* tab are listed the currently open channels, every channel has a type and you can see its full definition by clicking on *Definition*.
 
-Definitions are just plain algebraic data types [1].
+Definitions are just [plain algebraic data types](https://github.com/tittoassini/zm).
 
 For example, you should see a *Message* channel that is used to implement a simple chat system. Click on *Show Values* to inspect the value being transferred and then use the [chat user interface](http://quid2.org/app/chat) to login and send a couple of messages and see them appear on the channel.
 
@@ -62,15 +68,7 @@ Under the *Types* tab is the list of types known to the system.
 
 Top does not provide any other service beyond full-duplex typed communication, any other service (e.g. identification or encryption) has to be provided by the clients themselves but that can be done easily and independently by simply creating data types that stands for the additional functionality required.
 
-### Haskell API
-
-This repo provides an Haskell API for Top.
-
-The API is compatible with both [ghc](https://www.haskell.org/ghc/) (tested with 7.10.3) and [ghcjs](https://github.com/ghcjs/ghcjs) so it can be used to develop both stand alone and WWW applications.
-
-Help in developing APIs for other programming languages would be greatly appreciated :-)
-
-#### Usage
+### Usage
 
 Using Top can be as simple as:
 
@@ -79,7 +77,7 @@ Using Top can be as simple as:
 import Network.Top
 
 -- |Send a message and then print out all messages received
-main = runClient def ByType $ \conn -> do
+main = runApp def ByType $ \conn -> do
   logLevel DEBUG
   output conn Message {fromUser="robin",content=TextMessage "Hello!"}
   loop conn
@@ -97,7 +95,7 @@ data Content =
     | HTMLMessage String
     deriving (Eq, Ord, Read, Show, Generic, Flat, Model)
 ```
-[Source Code](https://github.com/tittoassini/top-apps/blob/master/app/hello.hs)
+<sup>[Source Code](https://github.com/tittoassini/top-apps/blob/master/app/hello.hs)</sup>
 
 For examples of stand-alone and www applications see:
 
@@ -108,30 +106,15 @@ For examples of stand-alone and www applications see:
 
 #### Installation
 
-It is not yet on [hackage](https://hackage.haskell.org/) but you can use it in your [stack](https://docs.haskellstack.org/en/stable/README/) projects by adding in the `stack.yaml` file, under the `packages` section:
-
-````
-- location:
-    git: https://github.com/tittoassini/top
-    commit: 618fcab4c1bd87008f14ef1f199a5dee795f7045
-  extra-dep: true
-- location:
-    git: https://github.com/tittoassini/typed
-    commit: 00b39b1e94dc2a047e6371a1622c8ee411882efe
-  extra-dep: true
-- location:
-   git: https://github.com/tittoassini/flat
-   commit: 3771f5946dd506c6f199aa4047186d5b57bdce5f
-  extra-dep: true
-- location:
-   git: https://github.com/tittoassini/model
-   commit: b05a56a993213271e3b13d28a5e8bb90c9d8576f
-  extra-dep: true
-````
+ Get the latest stable version from [hackage](https://hackage.haskell.org/package/top).
 
 #### Compatibility
 
-Tested with [ghc](https://www.haskell.org/ghc/) 7.10.3 and 8.0.1.
+Tested with:
+  * [ghc](https://www.haskell.org/ghc/) 7.10.3, 8.0.1 and 8.0.2 (x64)
+  * [ghcjs](https://github.com/ghcjs/ghcjs)
+
+So it can be used to develop both stand alone and WWW applications.
 
 ### The Top Service.
 
@@ -143,8 +126,3 @@ TERMS OF SERVICE:
 * Fair usage is defined as any usage that does not lead to a *de facto* denial of service to other users or that imposes unreasonable expense on its maintainer.
 * By using the Top service you accept that the service is offered "as is" with no express or implied warranty for availability, performance, consistency, longevity or functionality.
 
-#### Downtime
-The Top service might be down for upgrades every Monday between 7 and 8 am (UTC+1 [DST](https://en.wikipedia.org/wiki/Daylight_saving_time)).
-
-### Notes
-[1] With a couple of restrictions: data types definitions cannot be mutually recursive and variables can appear only in kind * positions.

@@ -1,0 +1,23 @@
+resolver: lts-6.32
+#resolver: lts-7.23
+#resolver: lts-8.15
+# resolver: nightly-2017-05-20
+#pvp-bounds: lower
+packages:
+- '.'
+
+# - location: ../flat
+#   extra-dep: true
+
+# - location: ../model
+#   extra-dep: true
+
+# - location: ../zm
+#   extra-dep: true
+
+extra-deps:
+- model-0.3
+- flat-0.3
+- zm-0.2.4
+- cryptonite-0.22
+- mono-traversable-1.0.2

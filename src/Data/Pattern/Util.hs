@@ -1,9 +1,10 @@
+-- |Utilities
 module Data.Pattern.Util where
 
-import ZM
-import Data.Word
-import Data.Int
-import Data.Either
+import           Data.Either
+import           Data.Int
+import           Data.Word
+import           ZM
 
 -- chkErrors :: [Either String b] -> [b]
 -- chkErrors = either error id . collectErrors

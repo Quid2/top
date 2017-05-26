@@ -17,7 +17,6 @@ import           ZM
 type DB = AcidState DBState
 
 newtype DBState = DBState AbsEnv
---data DBState = DBState !AbsEnv
              deriving (Typeable,Show)
 
 -- Transactions
@@ -32,9 +31,11 @@ getByRef key = asks (\(DBState st) -> M.lookup key st)
 
 makeAcidic ''DBState ['whole,'insert,'getByRef]
 
+-- API
 wholeDB :: DB -> IO DBState
 wholeDB db = query db Whole
 
+emptyDB :: DBState
 emptyDB = DBState M.empty
 
 openDB :: FilePath -> IO DB
@@ -50,9 +51,13 @@ getDB db k = query db (GetByRef k)
 putDB :: DB -> AbsRef -> AbsADT -> IO ()
 putDB db k v = update db (Insert k v)
 
-dbDir dir = dir </> "ADTS"
-
+closeDB :: AcidState st -> IO ()
 closeDB = closeAcidState
+
+-- Utilities
+
+dbDir :: FilePath -> FilePath
+dbDir dir = dir </> "ADTS"
 
 $(deriveSafeCopy 0 'base ''Type)
 $(deriveSafeCopy 0 'base ''Identifier)

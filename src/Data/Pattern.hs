@@ -1,3 +1,4 @@
+-- |Patterns (for ByPattern channels)
 module Data.Pattern(module X) where
 
 import Data.Pattern.TH as X

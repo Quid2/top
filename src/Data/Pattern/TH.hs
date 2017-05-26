@@ -1,7 +1,7 @@
 -- |Convert a Template Haskell pattern to a Pattern
 {-# LANGUAGE NoMonomorphismRestriction #-}
 {-# LANGUAGE ScopedTypeVariables       #-}
-{-# LANGUAGE TemplateHaskell           #-}
+
 module Data.Pattern.TH (patternQ, patternE) where
 
 import           Data.Pattern.Types
@@ -10,10 +10,23 @@ import qualified Language.Haskell.TH        as TH
 import           Language.Haskell.TH.Syntax hiding (Match, Type, Pat)
 import           Network.Top.Types          ()
 
+-- |Template Haskell function to convert an Haskell pattern to an `IPattern`
+--
+-- @
+-- $(patternE [p|_|]) == PName PWild
+-- @
+--
 -- Note: no support for negative integers or tuples with more than 5 elements
 patternE :: Q TH.Pat -> Q Exp
 patternE pat = asPatternM pat >>= lift
 
+-- |Template Haskell function to convert an Haskell pattern to an `IPattern`
+--
+-- @
+-- patternQ [p|_|] :: IO (Pat PRef)
+-- PName PWild
+-- @
+--
 patternQ :: Quasi m => Q TH.Pat -> m (Pat PRef)
 patternQ = runQ . asPatternM
 
@@ -24,7 +37,7 @@ asPatternM = (conv <$>)
     conv pat = case pat of
       ConP n [] | name n == "[]" -> PCon "Nil" []
 
-      ConP n args -> PCon (name n) $ map (conv) args
+      ConP n args -> PCon (name n) $ map conv args
 
       ListP ps -> convList $ map conv ps
 
@@ -44,25 +57,28 @@ asPatternM = (conv <$>)
       -- RecP --
 
       LitP l -> case l of
-                           CharL c     -> PName . PChar $ c -- valPattern c
-                           StringL s   -> PName . PString $ s -- valPattern s
-                           IntegerL i  -> PName . PInt $ i -- onInt i
-                           RationalL r -> PName . PRat $ r -- onRat r
+                           CharL c     -> PName . PChar $ c
+                           StringL s   -> PName . PString $ s
+                           IntegerL i  -> PName . PInt $ i
+                           RationalL r -> PName . PRat $ r
                            _ -> error . unwords $ ["Unsupported literal",show l]
 
       _ -> error . unwords $ ["Unsupported pattern",show pat] -- pprint p,show p]
 
 
-convList []    = PCon "Nil" []
-convList (h:t) = PCon "Cons" [h,convList t]
+    convList :: [Pat v] -> Pat v
+    convList []    = PCon "Nil" []
+    convList (h:t) = PCon "Cons" [h,convList t]
 
-name (Name (OccName n) _) = n
+    name :: Name -> String
+    name (Name (OccName n) _) = n
 
 -- asExp (PCon n ps) = AppE (AppE (c "Data.Pattern.Con") (LitE (StringL n))) (ListE (map asExp ps))
 -- asExp (PName (V v)) = VarE (mkName v)
 -- asExp (PName W) = AppE (c "Data.Pattern.Var") (c "W")
 
-c = ConE . mkName
+-- c = ConE . mkName
+
 
 
 

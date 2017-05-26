@@ -3,6 +3,7 @@
 {-# LANGUAGE FlexibleInstances         #-}
 {-# LANGUAGE NoMonomorphismRestriction #-}
 {-# LANGUAGE ScopedTypeVariables       #-}
+
 -- |Convert an Haskell pattern to the form accepted by ByPattern channels
 module Data.Pattern.Transform (byPattern, byPattern_) where
 
