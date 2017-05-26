@@ -7,18 +7,19 @@ module Network.Top.Run (
   ) where
 
 import           Data.ByteString        (ByteString)
-import qualified Data.Text              as T
 import           Network.Top.Types
 import           Network.Top.Util
 import           Network.Top.WebSockets
 import           ZM
-import Data.Bifunctor
-import Data.Maybe
 
 -- |Permanently connect an application to a typed channel.
 -- |Restart application in case of network or application failure.
 -- |NOTE: does not provide a way to preserve application's state
-runAppForever :: (Model (router a), Flat (router a),Show (router a),Flat a,Show a) => Config -> router a -> App a r -> IO ()
+runAppForever :: (Model (router a), Flat (router a),Show (router a),Flat a,Show a) =>
+  Config       -- ^ Top configuration
+  -> router a  -- ^ Routing protocol
+  -> App a r   -- ^ Application to connect
+  -> IO r      -- ^ Value returned from the application
 runAppForever cfg router app = forever $ do
       Left (ex :: SomeException) <- try $ runApp cfg router $ \conn -> do
         liftIO $ dbgS "connected"
@@ -29,12 +30,21 @@ runAppForever cfg router app = forever $ do
       threadDelay $ seconds 5
 
 -- |Connect an application to a typed channel.
-runApp :: (Model (router a), Flat (router a),Show (router a),Flat a,Show a) => Config -> router a -> App a r -> IO r
+runApp ::
+  (Model (router a), Flat (router a),Show (router a),Flat a,Show a) =>
+  Config       -- ^ Top configuration
+  -> router a  -- ^ Routing protocol
+  -> App a r   -- ^ Application to connect
+  -> IO r      -- ^ Value returned from the application
 runApp cfg router app = do
       dbg ["run",show router]
       runAppWith cfg (typedBLOB router) (\conn -> app (Connection (receive conn) (send conn) (close conn)))
 
-runAppWith :: Config -> TypedBLOB -> App ByteString r -> IO r
+-- |Connect an application to a typed channel
+runAppWith :: Config                     -- ^ Top configuration
+           -> TypedBLOB                  -- ^ Routing protocol
+           -> App ByteString r           -- ^ Application to connect
+           -> IO r                       -- ^ Value returned from the application
 runAppWith cfg routerBin app = run cfg 1
   where
     run _   4 = errIn "Too many redirects"
@@ -61,17 +71,17 @@ send conn v = do
   --dbg ["sent",show v,"as",show $ L.unpack e]
 
 -- |Receive a value from a typed connection
+receive :: (Show a,Flat a) => WSConnection -> IO a
+receive conn = do
+  e <- input conn
+  either (\ex -> error $ unwords ["receive error",show ex]) return $ unflat e
+
 -- receive :: Flat a => WSConnection -> IO (Maybe a)
 -- receive conn = do
 --   mbs <- input conn
 --   return $ case mbs of
 --     Nothing -> Nothing
 --     Just bs -> eitherToMaybe $ unflat bs
-receive :: (Show a,Flat a) => WSConnection -> IO a
-receive conn = do
-  e <- input conn
-  either (\e -> error $ unwords ["receive error",show e]) return $ unflat e
-
 -- -- |Setup a connection by sending a value specifying the routing protocol to be used
 -- protocol :: (Show r, Model r, Flat r) => Connection ByteString -> r -> IO ()
 -- --protocol = setProtocol (return ())

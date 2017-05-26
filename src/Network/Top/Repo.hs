@@ -7,14 +7,12 @@
 {-# LANGUAGE TupleSections             #-}
 
 -- |Permanently register and retrieve absolute type definitions
-module Network.Top.Repo (RepoProtocol(..),recordType, solveType, knownTypes) where
+module Network.Top.Repo (RepoProtocol(..), recordType, solveType, knownTypes) where
 
 import           Control.Monad
-import           Data.Bifunctor
-import           Data.Either.Extra (lefts, rights)
+import           Data.Either.Extra (lefts)
 import           Data.List         (nub)
 import qualified Data.Map          as M
-import           Data.Maybe
 import           Network.Top.Run
 import           Network.Top.Types
 import           Network.Top.Util
@@ -34,18 +32,19 @@ data RepoProtocol = Record AbsADT                      -- ^Permanently record an
 --instance Flat [(AbsRef,AbsADT)]
 
 type RefSolver = AbsRef -> IO (Either RepoError AbsADT)
-type TypeSolver = AbsType -> IO (Either RepoError AbsTypeModel)
+-- type TypeSolver = AbsType -> IO (Either RepoError AbsTypeModel)
 type RepoError = String -- SomeException
 
--- |Permanently record an absolute type definition
+-- |Permanently record an ADT definition
 --
--- >> recordType def (Proxy :: Proxy Bool)
+-- @
+-- recordType def (Proxy :: Proxy Bool)
+-- @
+--
 recordType :: Model a => Config -> Proxy a -> IO ()
 recordType cfg proxy = runApp cfg ByType $ \conn -> mapM_ (output conn . Record) . absADTs $ proxy
 
--- |Retrieve all known types
---
--- >> knownTypes def
+-- |Retrieve all known data types
 knownTypes :: Config -> IO (Either String [(AbsRef, AbsADT)])
 knownTypes cfg = runApp cfg ByType $ \conn -> do
   output conn AskDataTypes
