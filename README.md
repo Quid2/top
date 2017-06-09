@@ -1,5 +1,8 @@
 
-[![Build Status](https://travis-ci.org/tittoassini/top.svg?branch=master)](https://travis-ci.org/tittoassini/top) [![Hackage version](https://img.shields.io/hackage/v/top.svg)](http://hackage.haskell.org/package/top)
+[![Build Status](https://travis-ci.org/Quid2/top.svg?branch=master)](https://travis-ci.org/Quid2/top)
+[![Hackage version](https://img.shields.io/hackage/v/top.svg)](http://hackage.haskell.org/package/top)
+[![Stackage Nightly](http://stackage.org/package/top/badge/nightly)](http://stackage.org/nightly/package/top)
+[![Stackage LTS](http://stackage.org/package/top/badge/lts)](http://stackage.org/lts/package/top)
 
 Haskell API for [Top (Type Oriented Protocol)](http://quid2.org/docs/Top.pdf).
 
@@ -58,7 +61,7 @@ You can [see it in action](http://quid2.org/app/ui).
 
 Under the *Channels* tab are listed the currently open channels, every channel has a type and you can see its full definition by clicking on *Definition*.
 
-Definitions are just [plain algebraic data types](https://github.com/tittoassini/zm).
+Definitions are just [plain algebraic data types](https://github.com/Quid2/zm).
 
 For example, you should see a *Message* channel that is used to implement a simple chat system. Click on *Show Values* to inspect the value being transferred and then use the [chat user interface](http://quid2.org/app/chat) to login and send a couple of messages and see them appear on the channel.
 
@@ -99,10 +102,10 @@ data Content =
 
 For examples of stand-alone and www applications see:
 
-* [top-apps-ghcjs](https://github.com/tittoassini/top-apps-ghcjs)
-  * Example WWW applications for [top](https://github.com/tittoassini/top), using [ghcjs](https://github.com/ghcjs/ghcjs).
-* [top-apps](https://github.com/tittoassini/top-apps)
-  * Example applications for [top](https://github.com/tittoassini/top).
+* [top-apps-ghcjs](https://github.com/Quid2/top-apps-ghcjs)
+  * Example WWW applications for [top](https://github.com/Quid2/top), using [ghcjs](https://github.com/ghcjs/ghcjs).
+* [top-apps](https://github.com/Quid2/top-apps)
+  * Example applications for [top](https://github.com/Quid2/top).
 
 #### Installation
 
