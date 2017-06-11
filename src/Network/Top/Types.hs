@@ -39,7 +39,7 @@ module Network.Top.Types(
   ,ChannelSelectionResult(..)
 
   -- *Network Addresses
-  ,WebSocketAddress(..),SocketAddress(..),IP4Address(..),IP6Address,HostAddress(..)
+  ,WebSocketAddress(..),SocketAddress(..),IP4Address(..),IP6Address,HostAddress(..),HostPort(..)
 
   -- *Re-exports
   -- ,module ZM
