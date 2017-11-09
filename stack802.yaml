@@ -1,11 +1,5 @@
-resolver: lts-8.15
-
-packages:
-- '.'
+resolver: lts-9.12
 
 extra-deps:
-- model-0.3
-- flat-0.3
-- zm-0.2.4
-- cryptonite-0.22
-- mono-traversable-1.0.2
+- model-0.4.2
+- zm-0.3

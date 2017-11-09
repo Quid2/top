@@ -7,14 +7,13 @@
 -- |Convert an Haskell pattern to the corresponding `ByPattern` channel identifier
 module Data.Pattern.Transform (byPattern, byPattern_) where
 
-import qualified Data.Flat.Bits       as V
+import qualified Data.Flat.Bits     as V
 import           Data.Int
-import qualified Data.ListLike.String as L
-import qualified Data.Map             as M
+import qualified Data.Map           as M
 import           Data.Pattern.Types
 import           Data.Pattern.Util
 import           Data.Word
-import           ZM                   hiding (Name)
+import           ZM                 hiding (Name)
 
 -- |Convert an Haskell pattern to the corresponding `ByPattern` channel identifier
 -- or throw an error if conversion fails
@@ -29,7 +28,7 @@ byPattern_ pat =
       solveCons t = let Just ct = M.lookup t ctMap in (ct,t)
 
       conv (PCon n ps) (ct,t) =
-        case constructorInfo (L.fromString n) ct of
+        case constructorInfo (convert n) ct of
           Nothing -> err ["Constructor '"++ n ++"' not present in",show t]
           Just (bs,ts) | length ts == length ps -> Right (MatchValue . map boolToBit $ bs) : concatMap (uncurry conv) (zip ps $ map solveCons ts)
                        | otherwise -> err ["Constructor",n,"has",show (length ts),"parameters, found",show (length ps)]

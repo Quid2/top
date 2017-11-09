@@ -1,11 +1,9 @@
-resolver: lts-6.32
-
-packages:
-- '.'
+resolver: lts-6.35
 
 extra-deps:
-- model-0.3
+- model-0.4.2
 - flat-0.3
-- zm-0.2.4
+- zm-0.3
 - cryptonite-0.22
-- mono-traversable-1.0.2
+- mono-traversable-1.0.4.0
+- attoparsec-0.13.2.0
