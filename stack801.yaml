@@ -5,4 +5,4 @@ extra-deps:
 - flat-0.3
 - zm-0.3
 - cryptonite-0.22
-- attoparsec-0.13.2.0
+#- attoparsec-0.13.2.0
