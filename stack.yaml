@@ -6,4 +6,4 @@ extra-deps:
 - zm-0.3
 - cryptonite-0.22
 - mono-traversable-1.0.4.0
-#- attoparsec-0.13.2.0
+
