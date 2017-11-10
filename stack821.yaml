@@ -1,13 +1,5 @@
-#resolver: lts-6.32
-resolver: nightly-2017-07-31
-packages:
-- '.'
+resolver: nightly-2017-11-09
 
 extra-deps:
-- model-0.3
-- flat-0.3
-- zm-0.2.4
-- cryptonite-0.22
-- mono-traversable-1.0.2
-- acid-state-0.14.3
-- safecopy-0.9.3.2
+- model-0.4.2
+- zm-0.3
