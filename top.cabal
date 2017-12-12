@@ -1,5 +1,5 @@
 name: top
-version: 0.2.3
+version: 0.2.4
 synopsis: Top (typed oriented protocol) API
 description: See the <http://github.com/tittoassini/top online tutorial>.
 homepage: http://github.com/tittoassini/top
@@ -83,7 +83,7 @@ test-suite top-test-repo
                   base,
                   directory >=1.2 && <2,
                   tasty >= 0.11 && < 0.13,
-                  tasty-hunit >= 0.8 && < 0.10,
+                  tasty-hunit >= 0.8 && < 0.11,
                   top,
                   zm
     default-language: Haskell2010
