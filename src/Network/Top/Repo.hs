@@ -7,7 +7,14 @@
 {-# LANGUAGE TupleSections             #-}
 
 -- |Permanently register and retrieve absolute type definitions
-module Network.Top.Repo (RepoProtocol(..), recordType, solveType, knownTypes) where
+module Network.Top.Repo
+  ( RepoProtocol(..)
+  , recordType
+  , recordADTs
+  , solveType
+  , solveRefs
+  , knownTypes
+  ) where
 
 import           Control.Monad
 import           Data.Either.Extra (lefts)
@@ -35,9 +42,13 @@ type RefSolver = AbsRef -> IO (Either RepoError AbsADT)
 -- type TypeSolver = AbsType -> IO (Either RepoError AbsTypeModel)
 type RepoError = String -- SomeException
 
--- |Permanently record an ADT definition
+-- |Permanently record all the ADT definitions referred by a type, with all their dependencies
 recordType :: Model a => Config -> Proxy a -> IO ()
-recordType cfg proxy = runApp cfg ByType $ \conn -> mapM_ (output conn . Record) . absADTs $ proxy
+recordType cfg proxy = recordADTs cfg $ absADTs $ proxy
+
+-- |Permanently record a set of ADT definitions with all their dependencies
+recordADTs :: Foldable t => Config -> t AbsADT -> IO ()
+recordADTs cfg adts = runApp cfg ByType $ \conn -> mapM_ (output conn . Record) adts
 
 -- |Retrieve all known data types
 knownTypes :: Config -> IO (Either String [(AbsRef, AbsADT)])
@@ -55,18 +66,19 @@ knownTypes cfg = runApp cfg ByType $ \conn -> do
 -- |Retrieve the full type model for the given absolute type
 -- from Top's RepoProtocol channel, using the given Repo as a cache
 solveType :: Repo -> Config -> AbsType -> IO (Either RepoError AbsTypeModel)
-solveType repo cfg t = ((TypeModel t . M.fromList) <$>) <$> solveType_ repo cfg t
-  where
-    solveType_ :: Repo -> Config -> AbsType -> IO (Either RepoError [(AbsRef,AbsADT)])
-    solveType_ repo cfg t = runApp cfg ByType $ \conn -> (solveRefsRec repo (resolveRef__ conn)) (references t)
+solveType repo cfg t = ((TypeModel t) <$>) <$> solveRefs repo cfg (references t)
 
-    solveRefsRec :: Repo -> RefSolver -> [AbsRef] -> IO (Either RepoError [(AbsRef,AbsADT)])
-    solveRefsRec _     _     [] = return $ Right []
+-- |Solve ADT references recursively, returning all dependencies.
+solveRefs :: Repo -> Config -> [AbsRef] -> IO (Either RepoError (M.Map AbsRef AbsADT))
+solveRefs repo cfg refs = runApp cfg ByType $ \conn -> (solveRefsRec repo (resolveRef__ conn)) refs
+  where
+    solveRefsRec :: Repo -> RefSolver -> [AbsRef] -> IO (Either RepoError (M.Map AbsRef AbsADT))
+    solveRefsRec _     _     [] = return $ Right M.empty
     solveRefsRec repo solver refs = do
       er <- allErrs <$> mapM (solveRef repo solver) refs
       case er of
         Left err -> return $ Left err
-        Right ros -> (nub . (ros ++) <$>) <$> solveRefsRec repo solver (concatMap (innerReferences . snd) ros)
+        Right ros -> (M.union (M.fromList ros) <$>) <$> solveRefsRec repo solver (concatMap (innerReferences . snd) ros)
 
     allErrs :: [Either String r] -> Either String [r]
     allErrs rs =
@@ -85,6 +97,7 @@ solveType repo cfg t = ((TypeModel t . M.fromList) <$>) <$> solveType_ repo cfg 
 resolveRef :: Config -> AbsRef -> IO (Either String AbsADT)
 resolveRef cfg ref = checked $ resolveRef_ cfg ref
 
+resolveRef_ :: Config -> AbsRef -> IO (Either String AbsADT)
 resolveRef_ cfg ref = runApp cfg ByType (flip resolveRef__ ref)
 
 resolveRef__ :: Connection RepoProtocol -> AbsRef -> IO (Either String AbsADT)

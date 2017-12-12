@@ -1,3 +1,8 @@
+Version 0.2.4:
+	- stack/cabal: fixed dependencies
+	- Network.Top.Repo: added 'solveRefs' and 'recordADTs'
+	- Repo.Types: added 'withRepo'
+
 Version 0.2.2:
 	- cabal: added upper bounds for dependencies
 

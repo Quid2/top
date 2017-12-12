@@ -1,4 +1,7 @@
-sudo: false
+#sudo: false
+sudo: required
+
+dist: trusty
 
 language: c
 
@@ -18,23 +21,19 @@ matrix:
   - env: BUILD=cabal GHCVER=8.0.2 CABALVER=1.24
     compiler: ": #GHC 8.0.2"
     addons: {apt: {packages: [cabal-install-1.24,happy-1.19.5,ghc-8.0.2], sources: [hvr-ghc]}}
- 
-  #- env: BUILD=stack ARGS="--resolver lts-6"
+  # This fails on Travis for 'zm', though it works locally, no idea why, error is:
+  # At least the following dependencies are missing:mwc-random -any
   - env: BUILD=stack ARGS="--stack-yaml stack710.yaml"
     compiler: ": #stack 7.10.3"
     addons: {apt: {packages: [ghc-7.10.3], sources: [hvr-ghc]}}
-
-  - env: BUILD=stack ARGS="--stack-yaml stack801.yaml"
-    compiler: ": #stack 8.0.1"
-    addons: {apt: {packages: [ghc-8.0.1], sources: [hvr-ghc]}}
 
   - env: BUILD=stack ARGS="--stack-yaml stack802.yaml"
     compiler: ": #stack 8.0.2"
     addons: {apt: {packages: [ghc-8.0.2], sources: [hvr-ghc]}}
 
-  - env: BUILD=stack ARGS="--stack-yaml stack821.yaml"
-    compiler: ": #stack 8.2.1"
-    addons: {apt: {packages: [ghc-8.2.1], sources: [hvr-ghc]}}
+  - env: BUILD=stack ARGS="--stack-yaml stack822.yaml"
+    compiler: ": #stack 8.2.2"
+    addons: {apt: {packages: [ghc-8.2.2], sources: [hvr-ghc]}}
 
   fast_finish: true
 

@@ -1,5 +1,5 @@
 name: top
-version: 0.2.2
+version: 0.2.3
 synopsis: Top (typed oriented protocol) API
 description: See the <http://github.com/tittoassini/top online tutorial>.
 homepage: http://github.com/tittoassini/top
@@ -11,13 +11,12 @@ maintainer:          tittoassini@gmail.com
 copyright:           Copyright: (c) 2016 Pasqualino `Titto` Assini
 cabal-version: >=1.10
 build-type: Simple
-Tested-With: GHC == 7.10.3 GHC == 8.0.1 GHC == 8.0.2 GHC == 8.2.1
+Tested-With: GHC == 7.10.3 GHC == 8.0.2 GHC == 8.2.2
 extra-source-files:
     stack.yaml
     stack710.yaml
-    stack801.yaml
     stack802.yaml
-    stack821.yaml
+    stack822.yaml
     README.md
 
 source-repository head
@@ -73,7 +72,7 @@ library
                   extra >=1.4.10 && <2,
                   pretty >= 1.1.2 && < 1.2,
                   flat==0.3.*,
-                  zm ==0.3
+                  zm ==0.3.*
     default-language: Haskell2010
     hs-source-dirs: src
 
