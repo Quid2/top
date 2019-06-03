@@ -6,7 +6,7 @@ module Network.Top.Run (
   runAppWith
   ) where
 
-import           Data.ByteString        (ByteString)
+import           Data.ByteString        (ByteString,unpack)
 import           Network.Top.Types
 import           Network.Top.Util
 import           Network.Top.WebSockets
@@ -74,6 +74,7 @@ send conn v = do
 receive :: (Show a,Flat a) => WSConnection -> IO a
 receive conn = do
   e <- input conn
+  dbg ["received",show $ unpack e]
   either (\ex -> error $ unwords ["receive error",show ex]) return $ unflat e
 
 -- receive :: Flat a => WSConnection -> IO (Maybe a)

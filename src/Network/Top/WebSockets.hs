@@ -144,7 +144,7 @@ reopen c = do
                return r
 
              out v = do
-               -- dbg ["send",show $ L.unpack v]
+               --dbg ["send",show $ unpack v]
                webSocketSend ws v
              -- out v = do
               --   r <- tryE (webSocketSend conn (L.toStrict v))
