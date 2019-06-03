@@ -5,9 +5,6 @@ resolver: lts-13.24
 
 packages:
 - '.'
-#- ../model
-#- ../zm
-# - ../flat
 
 #- location: ../flat
 #  extra-dep: true
@@ -19,12 +16,11 @@ extra-deps:
 - github: Quid2/zm
   commit: 70e5098e60da459e7c357c02937ffda7166c3b3f
 
-#- zm-0.3.2
-# - cryptonite-0.22
-# - mono-traversable-1.0.4.0
+- cryptonite-0.22
 - acid-state-0.14.3@sha256:f719be0658ff61fa744a1ed8f49209e103b7bf01034d2911d2fb72c34d22cee9
+
 #- tasty-0.12.0.1@sha256:81562b02bc4d0aa4676337af2a9b54e9c4e811258e9b86ea97d5de15ad45bc38
 # - tasty-1.1.0.4@sha256:1310ceed449b3227614b329a1672a2c5bb046cb49e281996523567b3b0ad9ecc
 # - wcwidth-0.0.2@sha256:77531eb6683c505c22ab3fa11bbc43d3ce1e7dac21401d4d5a19677d348bb5f3
-
+# - mono-traversable-1.0.4.0
 # allow-newer: true
