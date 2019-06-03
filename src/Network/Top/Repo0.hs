@@ -7,14 +7,13 @@
 {-# LANGUAGE TupleSections             #-}
 
 -- |Permanently register and retrieve absolute type definitions
-module Network.Top.Repo
+module Network.Top.Repo0
   ( RepoProtocol(..)
   , recordType
   , recordADTs
   , solveType
   , solveRefs
   , knownTypes
-  , knownTypesRefs
   , String
   ) where
 
@@ -30,7 +29,7 @@ import           Network.Top.Types
 import           Network.Top.Util
 import           Repo.Types
 import           ZM
-import           ZM.Type.Repo
+import           ZM.Type.Repo0
 import Data.Bifunctor
 
 type RefSolver = AbsRef -> IO (Either RepoError AbsADT)
@@ -44,19 +43,6 @@ recordType cfg proxy = recordADTs cfg . absADTs $ proxy
 -- |Permanently record a set of ADT definitions with all their dependencies
 recordADTs :: Foldable t => Config -> t AbsADT -> IO ()
 recordADTs cfg adts = runApp cfg ByType $ \conn -> mapM_ (output conn . Record) adts
-
--- |Retrieve all known data types
-knownTypesRefs :: Config -> IO (Either RepoError [(AbsRef,String)])
-knownTypesRefs cfg = runApp cfg ByType $ \conn -> do
-  output conn AskDataTypesRefs
-
-  let loop = do
-        msg <- input conn
-        case msg of
-          KnownDataTypesRefs ts -> return . map (second (\(Z.String s) -> s)) $ ts
-          _                     -> loop
-
-  withTimeout 30 loop
 
 -- |Retrieve all known data types names (absolute references and names)
 knownTypes :: Config -> IO (Either RepoError [(AbsRef, AbsADT)])
