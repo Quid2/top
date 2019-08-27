@@ -21,7 +21,7 @@ module Network.Top.Util(
   ,liftIO,forever,when,unless
 
   -- *Logging (with native ghcjs support)
-  ,dbg,warn,info,err,dbgS,logLevel
+  ,dbg,dbgShow,warn,info,err,dbgS,logLevel
 
 #ifdef ghcjs_HOST_OS
   ,Priority(..)
@@ -47,7 +47,6 @@ import           GHC.IO.Handle            (Handle)
 import           System.Timeout
 
 ---------- Logging
-
 #ifdef ghcjs_HOST_OS
 
 ------------ GHC-JS Version
@@ -70,6 +69,10 @@ gLogLevel :: IORef Priority
 gLogLevel = unsafePerformIO (newIORef DEBUG)
 
 logLevel :: Priority -> IO ()
+
+dbgShow :: Show a => a -> IO ()
+dbgShow = dbgS . show
+
 dbgS :: String -> IO ()
 dbg :: [String] -> IO ()
 info :: [String] -> IO ()
@@ -108,6 +111,9 @@ logLevelOut level handle = do
   out <- verboseStreamHandler handle level
   updateGlobalLogger rootLoggerName (setHandlers [out] . setLevel level)
 
+dbgShow :: Show a => a -> IO ()
+dbgShow = dbgS . show
+  
 -- |Log a message at DEBUG level
 dbgS :: String -> IO ()
 dbgS = debugM "top"
