@@ -1,23 +1,26 @@
 -- |Access Top connections as Pipes
-module Network.Top.Pipes (
-    pipeIn,
-    pipeOut,
-
+module Network.Top.Pipes
+  ( runPipe
+  , pipeIn
+  , pipeOut
     -- *Re-exports from Pipe
-    runEffect,
-    (>->),
-    yield,
-    for,
-    await,
-    lift,
-    ) where
+  , runEffect
+  , (>->)
+  , yield
+  , for
+  , await
+  , lift
+  ) where
 
 import           Data.Flat
 import           Network.Top.Types
 import           Pipes
 
+runPipe :: (Show a, MonadIO m, Flat a) => Pipe a a m () -> Connection a -> m ()
+runPipe agent conn = runEffect $ pipeIn conn >-> agent >-> pipeOut conn
+
 -- |Receive values from a typed connection, terminate when connection is closed
-pipeIn :: (Show a, MonadIO m,Flat a) => Connection a -> Producer a m ()
+pipeIn :: (Show a, MonadIO m, Flat a) => Connection a -> Producer a m ()
 -- pipeIn conn = loop
 --      where
 --        loop = do
@@ -27,22 +30,20 @@ pipeIn :: (Show a, MonadIO m,Flat a) => Connection a -> Producer a m ()
 --            Just v -> do
 --              yield v
 --              loop
-
 -- |Send values on a typed connection, terminate when connection is closed
-pipeOut :: (Show a, MonadIO m,Flat a) => Connection a -> Consumer a m ()
+pipeOut :: (Show a, MonadIO m, Flat a) => Connection a -> Consumer a m ()
 -- pipeOut conn = loop
 --      where
 --        loop = do
 --          v <- await
 --          alive <- liftIO $ output conn v
 --          when alive loop
-
 pipeIn conn = loop
-       where
-         loop = do
-           v <- liftIO $ input conn
-           yield v
-           loop
+  where
+    loop = do
+      v <- liftIO $ input conn
+      yield v
+      loop
 
 pipeOut conn = loop
   where
