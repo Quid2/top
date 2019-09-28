@@ -8,121 +8,141 @@
 
 -- |Permanently register and retrieve absolute type definitions
 module Network.Top.Repo
-  ( RepoProtocol(..)
-  , recordType
+    --RepoProtocol(..)
+  ( recordType
   , recordADTs
-  , solveType
-  , solveRefs
+  , getAbsTypeModel
+  -- , solveType
+  -- , solveRefs
   , knownTypes
   , knownTypesRefs
   , String
   ) where
 
---import Prelude hiding (String)   
---import qualified Prelude as H
-import qualified ZM.Type.String as Z 
 import           Control.Monad
-import           Data.Either.Extra (lefts)
-import           Data.List         (nub)
-import qualified Data.Map          as M
+import           Control.Monad        (foldM)
+import           Data.Bifunctor
+import           Data.Either.Extra    (lefts)
+import           Data.List            (nub)
+import qualified Data.Map             as M
+import           Network.Top.Function
 import           Network.Top.Run
 import           Network.Top.Types
 import           Network.Top.Util
 import           Repo.Types
 import           ZM
 import           ZM.Type.Repo
-import Data.Bifunctor
+
+--import Prelude hiding (String)
+--import qualified Prelude as H
+import qualified ZM.Type.String       as Z
 
 type RefSolver = AbsRef -> IO (Either RepoError AbsADT)
+
 -- type TypeSolver = AbsType -> IO (Either RepoError AbsTypeModel)
 type RepoError = String -- SomeException
 
--- |Permanently record all the ADT definitions referred by a type, with all their dependencies
-recordType :: Model a => Config -> Proxy a -> IO ()
-recordType cfg proxy = recordADTs cfg . absADTs $ proxy
+type FF f r = Connection (Function f r) -> IO (Either String r)
 
--- |Permanently record a set of ADT definitions with all their dependencies
-recordADTs :: Foldable t => Config -> t AbsADT -> IO ()
-recordADTs cfg adts = runApp cfg ByType $ \conn -> mapM_ (output conn . Record) adts
+type FFN f r = Connection (Function f r) -> IO (Either String [r])
 
--- |Retrieve all known data types
-knownTypesRefs :: Config -> IO (Either RepoError [(AbsRef,String)])
-knownTypesRefs cfg = runApp cfg ByType $ \conn -> do
-  output conn AskDataTypesRefs
+{- |
+Permanently record all the ADT definitions referred by a type, with all their dependencies
 
-  let loop = do
-        msg <- input conn
-        case msg of
-          KnownDataTypesRefs ts -> return . map (second (\(Z.String s) -> s)) $ ts
-          _                     -> loop
+>>> run $ recordType (Proxy :: Proxy Bool)
+Right [()]
 
-  withTimeout 30 loop
+>>> run $ recordType (Proxy :: Proxy [Bool])
+Right [(),()]
 
--- |Retrieve all known data types names (absolute references and names)
-knownTypes :: Config -> IO (Either RepoError [(AbsRef, AbsADT)])
-knownTypes cfg = runApp cfg ByType $ \conn -> do
-  output conn AskDataTypes
+>>> run $ recordType (Proxy :: Proxy ((),(),(),(),()))
+Right [(),()]
+-}
+recordType :: (Model a) => Proxy a -> FFN (Record AbsADT) ()
+recordType proxy = recordADTs (absADTs proxy)
 
-  let loop = do
-        msg <- input conn
-        case msg of
-          KnownDataTypes ts -> return ts
-          _                 -> loop
+recordADTs adts = funCalls (map Record adts)
 
-  withTimeout 30 loop
+{- |
+Retrieve references of all known data types absolute references and names
 
--- |Retrieve the full type model for the given absolute type
--- from Top's RepoProtocol channel, using the given Repo as a cache
-solveType :: Repo -> Config -> AbsType -> IO (Either RepoError AbsTypeModel)
-solveType repo cfg t = (TypeModel t <$>) <$> solveRefs repo cfg (references t)
+>>> (("Char" `elem`) . map snd <$>) <$> run knownTypesRefs
+Right True
+-}
+knownTypesRefs :: FF (AllKnown (AbsRef, String)) [(AbsRef, String)]
+knownTypesRefs
+  -- (map (second (\(Z.String s) -> s)) <$>) <$>
+ = funCall AllKnown
 
--- |Solve ADT references recursively, returning all dependencies.
-solveRefs :: Repo -> Config -> [AbsRef] -> IO (Either RepoError (M.Map AbsRef AbsADT))
-solveRefs repo cfg refs = runApp cfg ByType $ \conn -> solveRefsRec repo (resolveRef__ conn) refs
-  where
-    solveRefsRec :: Repo -> RefSolver -> [AbsRef] -> IO (Either RepoError (M.Map AbsRef AbsADT))
-    solveRefsRec _     _     [] = return $ Right M.empty
-    solveRefsRec repo solver refs = do
-      er <- allErrs <$> mapM (solveRef repo solver) refs
-      case er of
-        Left err -> return $ Left err
-        Right ros -> (M.union (M.fromList ros) <$>) <$> solveRefsRec repo solver (concatMap (innerReferences . snd) ros)
+{- |
+Retrieve all known data types
 
-    allErrs :: [Either RepoError r] -> Either RepoError [r]
-    allErrs rs =
-      let errs = lefts rs
-      in if null errs
-         then sequence rs
-         else Left (unlines errs)
+>>> (("Char" `elem`) . map (convert . declName . snd) <$>) <$> run knownTypes
+Right True
 
-    solveRef :: Repo -> RefSolver -> AbsRef -> IO (Either RepoError (AbsRef,AbsADT))
-    solveRef repo solver ref = ((ref,) <$> )<$> do
-      rr <- get repo ref
-      case rr of
-        Nothing -> solver ref >>= mapM (\o -> put repo o >> return o)
-        Just o  -> return $ Right o
+-}
+knownTypes :: FF (AllKnown (AbsRef, AbsADT)) [(AbsRef, AbsADT)]
+knownTypes = funCall AllKnown
 
-resolveRef :: Config -> AbsRef -> IO (Either RepoError AbsADT)
-resolveRef cfg ref = checked $ resolveRef_ cfg ref
+{- |
+Retrieve the full type model for the given absolute type, using the given Repo as a cache
 
-resolveRef_ :: Config -> AbsRef -> IO (Either RepoError AbsADT)
-resolveRef_ cfg ref = runApp cfg ByType (`resolveRef__` ref)
+$setup
+>>> import Repo.Memory(memRepo)
+>>> import Data.Word
+>>> repo <- memRepo
+>>> p = Proxy :: Proxy (Bool,[Char],Word8)
 
-resolveRef__ :: Connection RepoProtocol -> AbsRef -> IO (Either RepoError AbsADT)
-resolveRef__ conn ref = checked $ resolveRef___ conn ref
+>>> ((absTypeModel p ==) <$>) <$> run (getAbsTypeModel repo (absType p))
+Right True
+-}
+getAbsTypeModel ::
+     Repo
+  -> AbsType
+  -> Connection (Function (Solve AbsRef AbsADT) AbsADT)
+  -> IO (Either String AbsTypeModel)
+getAbsTypeModel repo t conn =
+  (TypeModel t . M.fromList <$>) <$>
+  addAbsRefsRec repo (Right []) (references t) conn
 
-resolveRef___ :: Connection RepoProtocol -> AbsRef -> IO (Either RepoError AbsADT)
-resolveRef___ conn ref = do
-    output conn (Solve ref)
+addAbsRefsRec ::
+     Repo
+  -> Either String [(AbsRef, AbsADT)]
+  -> [AbsRef]
+  -> Connection (Function (Solve AbsRef AbsADT) AbsADT)
+  -> IO (Either String [(AbsRef, AbsADT)])
+addAbsRefsRec repo r rs conn =
+  foldM
+    (\er ref ->
+       case er of
+         Left e   -> return $ Left e
+         Right rs -> addAbsRefRec repo rs ref conn)
+    r
+    rs
 
-    let loop = do
-          msg <- input conn
-          case msg of
-            -- Solved t r | t == typ -> return $ (\e -> AbsoluteType (M.fromList e) typ) <$> r
-            Solved sref sadt | ref == sref && absRef sadt == sref -> return $ Right sadt
-            _ -> loop
+addAbsRefRec ::
+     Repo
+  -> [(AbsRef, AbsADT)]
+  -> AbsRef
+  -> Connection (Function (Solve AbsRef AbsADT) AbsADT)
+  -> IO (Either String [(AbsRef, AbsADT)])
+addAbsRefRec repo rs ref conn = do
+  eadt <- getAbsRef repo ref conn
+  case eadt of
+    Left e -> return $ Left e
+    Right adt ->
+      addAbsRefsRec repo (Right $ (ref, adt) : rs) (innerReferences adt) conn
 
-    join <$> withTimeout 25 loop
+getAbsRef ::
+     Repo
+  -> AbsRef
+  -> Connection (Function (Solve AbsRef AbsADT) AbsADT)
+  -> IO (Either String AbsADT)
+getAbsRef repo ref conn = do
+  rr <- get repo ref
+  case rr of
+    Nothing -> funCall (Solve ref) conn >>= mapM (\o -> put repo o >> return o)
+    Just o -> return $ Right o
 
 absADTs :: Model a => Proxy a -> [AbsADT]
 absADTs = typeADTs . absTypeModel
