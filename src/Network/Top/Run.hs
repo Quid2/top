@@ -115,8 +115,8 @@ receive conn = do
   --let e = copy eo
   let ue = unpack e
   let ev = unflat e
-  dbg ["received data", show ue, " of length ", show $ length ue]
-  dbg ["value is", show ev]
+  dbg ["received data", take 200 $ show ue, " of length ", show $ length ue]
+  dbg ["value is", take 200 $ show ev]
   either (\ex -> error $ unwords ["receive error", show ex]) return ev
 -- receive :: Flat a => WSConnection -> IO (Maybe a)
 -- receive conn = do
