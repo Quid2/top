@@ -1,20 +1,19 @@
-# resolver: lts-9.14
-# resolver: lts-11.22
-resolver: lts-12.26
-# resolver: lts-14.3
+#resolver: lts-12.26 # PROB with doctest: unknown symbol `___gmp_rands'
+
+resolver: lts-14.7
 
 packages:
   - "."
-
-#- location: ../flat
-#  extra-dep: true
+  # - location: ../zm
+  #   extra-dep: true
 
 extra-deps:
   - model-0.5
   - flat-0.3.4
 
   - github: Quid2/zm
-    commit: 70e5098e60da459e7c357c02937ffda7166c3b3f
+    commit: 0b630aecec8f629fb88dab852839733c8a62412d
 
   - cryptonite-0.22
   - acid-state-0.14.3@sha256:f719be0658ff61fa744a1ed8f49209e103b7bf01034d2911d2fb72c34d22cee9
+  - ghcjs-base-stub-0.2.0.0@sha256:97df852868a0d2af3afebf86b62ae906626e95287521ad781a0d890d3d7f7543

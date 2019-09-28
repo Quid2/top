@@ -1,5 +1,5 @@
 name: top
-version: 0.2.5
+version: 0.2.7
 synopsis: Top (typed oriented protocol) API
 description: See the <http://github.com/Quid2/top online tutorial>.
 homepage: http://github.com/Quid2/top
@@ -38,6 +38,7 @@ library
             Repo.DB
             Repo.Disk
         build-depends:
+            -- ghcjs-base-stub,
             acid-state >=0.14.2 && < 0.15,
             filepath >=1.4.0.0,
             hslogger,
@@ -50,13 +51,16 @@ library
         Data.Pattern.Util
         Data.Pattern.Transform
         Network.Top
+        Network.Top.Function
         Network.Top.Pipes
         Network.Top.Repo
         Network.Top.Repo0
         Network.Top.Types
         Network.Top.Run
         Network.Top.Util
-        Network.Top.WebSockets
+        Network.Top.WSApp
+        Network.Top.WSApp.GHC
+        Network.Top.WSApp.GHCJS
         Repo.Types
         Repo.Memory
     build-depends:
@@ -74,11 +78,12 @@ library
                   extra >=1.4.10 && <2,
                   pretty >= 1.1.2 && < 1.2,
                   flat==0.3.*,
-                  zm >=0.3 && < 0.5
+                  zm >=0.3 
+                  -- && < 0.5
     default-language: Haskell2010
     hs-source-dirs: src
 
-test-suite top-test-repo
+test-suite repo
     type: exitcode-stdio-1.0
     main-is: RepoSpec.hs
     build-depends:
@@ -92,7 +97,7 @@ test-suite top-test-repo
     hs-source-dirs: test
     ghc-options: -threaded -rtsopts -with-rtsopts=-N
 
-test-suite top-doctest
+test-suite doc
   default-language:   Haskell2010
   type:               exitcode-stdio-1.0
   ghc-options:        -threaded
