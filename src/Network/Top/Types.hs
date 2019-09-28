@@ -66,7 +66,10 @@ import           Language.Haskell.TH.Syntax (Lift) -- ,lift)
 #endif
 
 -- |Top's access point configuration
-newtype Config = Config {accessPoint::WebSocketAddress IP4Address}
+data Config = Config {
+  accessPoint::WebSocketAddress IP4Address -- ^ Point of access to Top
+  --,timeoutInMilliSecs::Int -- ^ Maximum timeout in milliseconds for connections to open and calls to return
+  }
 
 -- |Return Top's access point IP
 cfgIP :: Config -> String
@@ -82,7 +85,7 @@ cfgPath = path . accessPoint
 
 -- |The configuration for the default Top router
 instance Default Config where
-  def = Config $ WebSocketAddress False (SocketAddress (DNSAddress "quid2.net") (HostPort 80)) "/ws"
+  def = Config (WebSocketAddress False (SocketAddress (DNSAddress "quid2.net") (HostPort 80)) "/ws") -- (20*1000)
 
 ---------------- Routing Protocols
 
