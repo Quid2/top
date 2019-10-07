@@ -1,5 +1,6 @@
 module Network.Top.Function
   ( Function
+  , funServe
   , funReply
   , funCall
   , funCalls
@@ -13,6 +14,8 @@ import           Network.Top.Types
 import           Network.Top.Util
 import           ZM
 import           ZM.Type.Function
+
+funServe f = async (runAppForever def ByType $ funReply f)
 
 funReply ::
      (Show f, Show r, NFData r, Flat f)
