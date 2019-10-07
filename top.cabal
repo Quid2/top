@@ -1,5 +1,5 @@
 name: top
-version: 0.2.7
+version: 0.2.9
 synopsis: Top (typed oriented protocol) API
 description: See the <http://github.com/Quid2/top online tutorial>.
 homepage: http://github.com/Quid2/top
@@ -35,7 +35,7 @@ library
             stm
     else
         exposed-modules:
-            Repo.DB
+            Repo.Disk.DB
             Repo.Disk
         build-depends:
             -- ghcjs-base-stub,
@@ -61,8 +61,10 @@ library
         Network.Top.WSApp
         Network.Top.WSApp.GHC
         Network.Top.WSApp.GHCJS
+        Repo
         Repo.Types
         Repo.Memory
+        Repo.Auto
     build-depends:
                   async >=2.1.1 && < 3,
                   base >=4.7 && <5,

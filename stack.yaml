@@ -1,5 +1,4 @@
 #resolver: lts-12.26 # PROB with doctest: unknown symbol `___gmp_rands'
-
 resolver: lts-14.7
 
 packages:
