@@ -113,7 +113,7 @@ reopen c = do
        JS.WebSocketRequest
          { url =
              S.pack $
-             concat ["ws://", cfgIP cfg, ":", show (cfgPort cfg), cfgPath cfg]
+             concat [if cfgSecure cfg then "wss" else "ws","://", cfgIP cfg, ":", show (cfgPort cfg), cfgPath cfg]
          , protocols = [S.pack $ T.unpack $ chatsProtocolT]
          , onClose = Just $ \_ -> closeConn c
          , onMessage =
