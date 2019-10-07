@@ -61,7 +61,17 @@ run ::
   -> IO r -- ^ Final value returned from the application
 run = runApp def ByType
 
--- |Connect an application to a typed channel.
+{- |Connect an application to a typed channel.
+$setup
+>>> wssConfig = Config (WebSocketAddress True (SocketAddress (DNSAddress "quid2.net") (HostPort 443)) "/ws") -- (20*1000)
+
+>>> runApp def ByType $ \conn -> output conn True >> print "DONE"
+"DONE"
+
+-- >>> runApp wssConfig ByType $ \conn -> output conn True >> print "DONE"
+-- "DONE"
+
+-}
 runApp ::
      (Model (router a), Flat (router a), Show (router a), Flat a, Show a)
   => Config -- ^ Top configuration
