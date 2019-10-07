@@ -15,7 +15,7 @@
 
 module Network.Top.Types(
   -- *Top access point configuration
-  Config(..),cfgIP,cfgPort,cfgPath,def
+  Config(..),cfgIP,cfgPort,cfgPath,cfgSecure,def
 
   -- *Connection Protocols
   --,byPattern
@@ -83,9 +83,19 @@ cfgPort = fromIntegral . port . socketPort . host . accessPoint
 cfgPath :: Config -> String
 cfgPath = path . accessPoint
 
+-- |Return Top's access point Secure flag
+cfgSecure :: Config -> Bool
+cfgSecure = secure . accessPoint
+
 -- |The configuration for the default Top router
 instance Default Config where
-  def = Config (WebSocketAddress False (SocketAddress (DNSAddress "quid2.net") (HostPort 80)) "/ws") -- (20*1000)
+-- Google Chrome won't allow non secure WebSocket access so we make it the default for GHCJS apps
+-- #ifdef ghcjs_HOST_OS
+--   def = Config (WebSocketAddress True (SocketAddress (DNSAddress "quid2.net") (HostPort 443)) "/ws")
+-- #else
+--   def = Config (WebSocketAddress False (SocketAddress (DNSAddress "quid2.net") (HostPort 80)) "/ws")
+-- #endif
+  def = Config (WebSocketAddress False (SocketAddress (DNSAddress "quid2.net") (HostPort 80)) "/ws")
 
 ---------------- Routing Protocols
 
