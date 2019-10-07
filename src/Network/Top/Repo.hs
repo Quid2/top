@@ -11,11 +11,10 @@ module Network.Top.Repo
     --RepoProtocol(..)
   ( recordType
   , recordADTs
-  -- , getAbsTypeModel
-  -- , solveType
-  -- , solveRefs
+  , recordADT
   , knownTypes
   , knownTypesRefs
+  , solveAbsRef
   , String
   ) where
 
@@ -67,6 +66,10 @@ Right [(),()]
 recordType :: (Model a) => Proxy a -> FFN (Record AbsADT) ()
 recordType proxy = recordADTs (absADTs proxy)
 
+recordADT :: AbsADT -> FF (Record AbsADT) ()
+recordADT adt = funCall (Record adt)
+
+recordADTs :: [AbsADT] -> FFN (Record AbsADT) ()
 recordADTs adts = funCalls (map Record adts)
 
 absADTs :: Model a => Proxy a -> [AbsADT]
@@ -92,6 +95,19 @@ Right True
 -}
 knownTypes :: FF (AllKnown (AbsRef, AbsADT)) [(AbsRef, AbsADT)]
 knownTypes = funCall AllKnown
+
+{- |
+Retrieve an ADT by its absolute reference
+
+$setup
+>>> import Data.Map
+>>> [(boolRef,boolADT)] = toList $ absEnv (Proxy :: Proxy Bool)
+
+>>> ((== boolADT) <$>) <$> run (solveAbsRef boolRef)
+Right True
+-}
+solveAbsRef :: AbsRef -> FF (Solve AbsRef AbsADT) AbsADT
+solveAbsRef ref = funCall (Solve ref)
 {-
 Retrieve the full type model for the given absolute type, using the given Repo as a cache
 
