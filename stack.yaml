@@ -8,10 +8,13 @@ packages:
 
 extra-deps:
   - model-0.5
-  - flat-0.3.4
+  # - flat-0.3.4
 
   - github: Quid2/zm
-    commit: 0b630aecec8f629fb88dab852839733c8a62412d
+    commit: 42474d9677d13d9511874e9a48c6bd296d68a3dd
+
+  - github: Quid2/flat
+    commit: 122d9943a6a73500ffc7368d237d69d8c2802e6a
 
   - cryptonite-0.22
   - acid-state-0.14.3@sha256:f719be0658ff61fa744a1ed8f49209e103b7bf01034d2911d2fb72c34d22cee9
