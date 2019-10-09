@@ -22,16 +22,25 @@ Just ...
 -}
 autoRepo repo = do
   recordThread <- funServe (recordADT repo)
-  ets <- run knownTypes
-  case ets of
-    Right ts -> mapM_ (R.put repo . snd) ts
-    Left e   -> warn ["Unable to get the list ok know types", show e]
+  knownThread <-
+    async $
+    attempts 30 $ do
+      ets <- run knownTypes
+      case ets of
+        Right ts -> mapM_ (R.put repo . snd) ts
+        Left e   -> warn ["Unable to get the list ok know types", show e]
   return
     R.Repo
-      { R.get = R.get repo
+      { R.get =
+          \ref -> do
+            mr <- R.get repo ref
+            case mr of
+              Nothing -> wait knownThread >> R.get repo ref
+              Just r  -> return $ Just r
       , R.put = R.put repo
       , R.close =
           do cancel recordThread
+             cancel knownThread
              R.close repo
       }
   where
