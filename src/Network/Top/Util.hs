@@ -8,7 +8,7 @@
 
 module Network.Top.Util(
   -- *Exceptions
-  strictTry,try,tryE,forceE,SomeException
+  strictTry,try,tryE,forceE,SomeException,attempts,attempt
 
   -- *Time
   ,milliseconds,seconds,minutes
@@ -161,10 +161,63 @@ withTimeout secs op = do
     Left (e::SomeException) -> Left (show e)
     Right m -> maybe (Left "Timeout") Right m
 
+attempts = attempt 3
+
+{- |
+Perform an operation at most once, attempting up to n times.
+
+$setup
+>>> import System.IO
+>>> () <- logLevelOut DEBUG stdout
+
+>>> attempt 0 (-1) (print "OK")
+
+>>> attempt 0 0 (print "OK")
+
+>>> attempt 0 1 (print "OK")
+"OK"
+
+>>> attempt 0 2 (print "OK")
+"OK"
+
+>>> attempt 0 0 (error "Bad")
+
+>>> attempt 0 1 (error "Bad")
+[top/DEBUG] Failed attempt 1 exception was Bad
+...
+
+>>> attempt 0 2 (error "Bad")
+[top/DEBUG] Failed attempt 1 exception was Bad
+...
+[top/DEBUG] retry in 0 secs
+...
+[top/DEBUG] Failed attempt 2 exception was Bad
+...
+-}
+attempt :: Int -> Int -> IO () -> IO ()
+attempt delayInSecs n op = attempt_ 0
+  where
+    attempt_ c
+      | c >= n = return ()
+      | otherwise = do
+         er <- strictTry op
+         case er of
+          Left ex -> do
+            let nc = c + 1
+            dbg ["Failed attempt", show nc, "exception was", show ex]
+            if nc == n
+              then E.throw ex
+              else do
+                dbg ["retry in", show delayInSecs, "secs"]
+                threadDelay $ seconds delayInSecs
+                attempt_ nc
+          Right () -> return ()
+
 -- |Convert an Either to a Maybe
 eitherToMaybe :: Either t a -> Maybe a
 eitherToMaybe (Right a) = Just a
 eitherToMaybe (Left _) = Nothing
+
 
 ---------- Time
 
