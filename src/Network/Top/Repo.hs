@@ -1,10 +1,7 @@
-{-# LANGUAGE DeriveAnyClass            #-}
-{-# LANGUAGE DeriveGeneric             #-}
 {-# LANGUAGE FlexibleInstances         #-}
 {-# LANGUAGE MultiParamTypeClasses     #-}
 {-# LANGUAGE NoMonomorphismRestriction #-}
 {-# LANGUAGE ScopedTypeVariables       #-}
-{-# LANGUAGE TupleSections             #-}
 
 -- |Permanently register and retrieve absolute type definitions
 module Network.Top.Repo
@@ -13,12 +10,13 @@ module Network.Top.Repo
   , recordADTs
   , recordADT
   , knownTypes
-  , knownTypesRefs
+  -- , knownTypesRefs
   , solveAbsRef
+  , solveAbsRefs
+  , getAbsTypeModel
   , String
   ) where
 
-import           Control.Monad
 import           Control.Monad        (foldM)
 import           Data.Bifunctor
 import           Data.Either.Extra    (lefts)
@@ -96,6 +94,7 @@ Right True
 knownTypes :: FF (AllKnown (AbsRef, AbsADT)) [(AbsRef, AbsADT)]
 knownTypes = funCall AllKnown
 
+-- knownTypes = ((M.fromList <$>) <$>) . funCall AllKnown
 {- |
 Retrieve an ADT by its absolute reference
 
@@ -108,6 +107,10 @@ Right True
 -}
 solveAbsRef :: AbsRef -> FF (Solve AbsRef AbsADT) AbsADT
 solveAbsRef ref = funCall (Solve ref)
+
+solveAbsRefs :: [AbsRef] -> FFN (Solve AbsRef AbsADT) AbsADT
+solveAbsRefs refs = funCalls (map Solve refs)
+
 {-
 Retrieve the full type model for the given absolute type, using the given Repo as a cache
 
@@ -123,49 +126,53 @@ Right True
 >>> tst (Proxy :: Proxy (Bool,[Char],Word8))
 Right True
 -}
--- getAbsTypeModel ::
---      Repo
---   -> AbsType
---   -> Connection (Function (Solve AbsRef AbsADT) AbsADT)
---   -> IO (Either String AbsTypeModel)
--- getAbsTypeModel repo t conn =
---   (TypeModel t . M.fromList <$>) <$>
---   addAbsRefsRec repo (Right []) (references t) conn
--- addAbsRefsRec ::
---      Repo
---   -> Either String [(AbsRef, AbsADT)]
---   -> [AbsRef]
---   -> Connection (Function (Solve AbsRef AbsADT) AbsADT)
---   -> IO (Either String [(AbsRef, AbsADT)])
--- addAbsRefsRec repo r rs conn =
---   foldM
---     (\er ref ->
---        case er of
---          Left e   -> return $ Left e
---          Right rs -> addAbsRefRec repo rs ref conn)
---     r
---     rs
--- addAbsRefRec ::
---      Repo
---   -> [(AbsRef, AbsADT)]
---   -> AbsRef
---   -> Connection (Function (Solve AbsRef AbsADT) AbsADT)
---   -> IO (Either String [(AbsRef, AbsADT)])
--- addAbsRefRec repo rs ref conn = do
---   eadt <- getAbsRef repo ref conn
---   case eadt of
---     Left e -> return $ Left e
---     Right adt ->
---       addAbsRefsRec repo (Right $ (ref, adt) : rs) (innerReferences adt) conn
--- getAbsRef ::
---      Repo
---   -> AbsRef
---   -> Connection (Function (Solve AbsRef AbsADT) AbsADT)
---   -> IO (Either String AbsADT)
--- getAbsRef repo ref conn = do
---   rr <- get repo ref
---   case rr of
---     Nothing -> funCall (Solve ref) conn >>= mapM (\o -> put repo o >> return o)
---     Just o -> return $ Right o
--- checked :: NFData b => IO (Either RepoError b) -> IO (Either RepoError b)
--- checked f = either (Left . show) id <$> strictTry f
+getAbsTypeModel ::
+     Repo
+  -> AbsType
+  -> Connection (Function (Solve AbsRef AbsADT) AbsADT)
+  -> IO (Either String AbsTypeModel)
+getAbsTypeModel repo t conn =
+  (TypeModel t . M.fromList <$>) <$>
+  addAbsRefsRec repo (Right []) (references t) conn
+
+addAbsRefsRec ::
+     Repo
+  -> Either String [(AbsRef, AbsADT)]
+  -> [AbsRef]
+  -> Connection (Function (Solve AbsRef AbsADT) AbsADT)
+  -> IO (Either String [(AbsRef, AbsADT)])
+addAbsRefsRec repo r rs conn =
+  foldM
+    (\er ref ->
+       case er of
+         Left e   -> return $ Left e
+         Right rs -> addAbsRefRec repo rs ref conn)
+    r
+    rs
+
+addAbsRefRec ::
+     Repo
+  -> [(AbsRef, AbsADT)]
+  -> AbsRef
+  -> Connection (Function (Solve AbsRef AbsADT) AbsADT)
+  -> IO (Either String [(AbsRef, AbsADT)])
+addAbsRefRec repo rs ref conn = do
+  eadt <- getAbsRef repo ref conn
+  case eadt of
+    Left e -> return $ Left e
+    Right adt ->
+      addAbsRefsRec repo (Right $ (ref, adt) : rs) (innerReferences adt) conn
+
+getAbsRef ::
+     Repo
+  -> AbsRef
+  -> Connection (Function (Solve AbsRef AbsADT) AbsADT)
+  -> IO (Either String AbsADT)
+getAbsRef repo ref conn = do
+  rr <- get repo ref
+  case rr of
+    Nothing -> funCall (Solve ref) conn >>= mapM (\o -> put repo o >> return o)
+    Just o -> return $ Right o
+
+checked :: NFData b => IO (Either RepoError b) -> IO (Either RepoError b)
+checked f = either (Left . show) id <$> strictTry f
