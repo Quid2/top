@@ -12,7 +12,7 @@ module Network.Top.Pipes
   , lift
   ) where
 
-import           Data.Flat
+import           Flat
 import           Network.Top.Types
 import           Pipes
 

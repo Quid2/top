@@ -28,7 +28,7 @@ autoRepo repo = do
       ets <- run knownTypes
       case ets of
         Right ts -> mapM_ (R.put repo . snd) ts
-        Left e   -> warn ["Unable to get the list ok know types", show e]
+        Left e   -> warn ["Unable to get the list of known types", show e]
   return
     R.Repo
       { R.get =

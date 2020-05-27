@@ -7,7 +7,7 @@
 -- |Convert an Haskell pattern to the corresponding `ByPattern` channel identifier
 module Data.Pattern.Transform (byPattern, byPattern_) where
 
-import qualified Data.Flat.Bits     as V
+import qualified Flat.Bits     as V
 import           Data.Int
 import qualified Data.Map           as M
 import           Data.Pattern.Types
