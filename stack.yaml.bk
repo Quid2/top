@@ -1,0 +1,21 @@
+#resolver: lts-14.27
+resolver: lts-18.28
+
+packages:
+  - "."
+
+# allow-newer: true
+
+extra-deps:
+  - model-0.5@sha256:c54661de2ba056cc59add51970979db6ef86258f470b9cc1a39bc4b6ae4a146a,2468
+  - flat-0.6
+  - ../zm
+
+  #- ../flat
+
+  # - github: Quid2/zm
+  #   commit: 5e30fb143f13c0a47c3a0adb43af8fd10249e2bd
+
+  - acid-state-0.16.0.1@sha256:d43f6ee0b23338758156c500290c4405d769abefeb98e9bc112780dae09ece6f,6207
+
+  - hashable-1.4.0.2@sha256:0cddd0229d1aac305ea0404409c0bbfab81f075817bd74b8b2929eff58333e55,5005
