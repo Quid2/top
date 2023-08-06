@@ -94,9 +94,9 @@ library
     , transformers        >=0.4.2.0  && <0.6
     , zm                  >=0.3
 
-  if (arch(x86_64) && flag(fast))
-    other-modules: Data.Pattern.X64
-    build-depends: x86-64bit >=0.4.5
+  -- if (arch(x86_64) && flag(fast))
+  --   other-modules: Data.Pattern.Matcher.X64
+  --   build-depends: x86-64bit >=0.4.5
 
   -- && < 0.5
   default-language: Haskell2010
