@@ -12,13 +12,12 @@ copyright:          Copyright: (c) 2016-2023 Pasqualino `Titto` Assini
 cabal-version:      >=1.10
 build-type:         Simple
 tested-with:        GHC ==7.10.3 || ==8.0.2 || ==8.2.2
-extra-source-files:
-  stack.yaml
-  stack710.yaml
-  stack802.yaml
-  stack822.yaml
-  README.md
+extra-source-files: README.md
 
+-- stack710.yaml
+-- stack802.yaml
+-- stack822.yaml
+-- stack.yaml
 source-repository head
   type:     git
   location: https://github.com/Quid2/top
