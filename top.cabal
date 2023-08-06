@@ -12,7 +12,9 @@ copyright:          Copyright: (c) 2016-2023 Pasqualino `Titto` Assini
 cabal-version:      >=1.10
 build-type:         Simple
 tested-with:        GHC ==7.10.3 || ==8.0.2 || ==8.2.2
-extra-source-files: README.md
+extra-source-files:
+  README.md
+  CHANGELOG
 
 -- stack710.yaml
 -- stack802.yaml
