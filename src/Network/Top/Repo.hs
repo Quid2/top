@@ -1,38 +1,51 @@
-{-# LANGUAGE FlexibleInstances         #-}
-{-# LANGUAGE MultiParamTypeClasses     #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE NoMonomorphismRestriction #-}
-{-# LANGUAGE ScopedTypeVariables       #-}
 
 -- |Permanently register and retrieve absolute type definitions
 module Network.Top.Repo
-    --RepoProtocol(..)
-  ( recordType
-  , recordADTs
-  , recordADT
-  , knownTypes
+--RepoProtocol(..)
+  (
+  recordType,
+  recordADTs,
+  recordADT,
+  knownTypes,
   -- , knownTypesRefs
-  , solveAbsRef
-  , solveAbsRefs
-  , getAbsTypeModel
-  , String
-  ) where
+  solveAbsRef,
+  solveAbsRefs,
+  getAbsTypeModel,
+  String,
+) where
 
-import           Control.Monad        (foldM)
-import           Data.Bifunctor
-import           Data.Either.Extra    (lefts)
-import           Data.List            (nub)
-import qualified Data.Map             as M
-import           Network.Top.Function
-import           Network.Top.Run
-import           Network.Top.Types
-import           Network.Top.Util
-import           Repo.Types
-import           ZM
-import           ZM.Type.Repo
-
+import Control.Monad (foldM)
+import Data.Bifunctor
+import Data.Either.Extra (lefts)
+import Data.List (nub)
+import qualified Data.Map as M
+import Network.Top.Function
+import Network.Top.Run
+import Network.Top.Types
+import Network.Top.Util
+import Repo.Types (Repo (get, put))
+import ZM (
+  AbsADT,
+  AbsRef,
+  AbsType,
+  AbsTypeModel,
+  Model,
+  NFData,
+  Proxy,
+  TypeModel (TypeModel),
+  absTypeModel,
+  innerReferences,
+  references,
+  typeADTs,
+ )
+import ZM.Type.Repo (AllKnown (..), Record (..), Solve (..))
 --import Prelude hiding (String)
 --import qualified Prelude as H
-import qualified ZM.Type.String       as Z
+import qualified ZM.Type.String as Z
 
 type RefSolver = AbsRef -> IO (Either RepoError AbsADT)
 
@@ -46,6 +59,7 @@ type FFN f r = Connection (Function f r) -> IO (Either String [r])
 {- |
 Permanently record all the ADT definitions referred by a type, with all their dependencies
 
+>>> import Data.Proxy
 >>> run $ recordType (Proxy :: Proxy Bool)
 Right [()]
 
@@ -80,26 +94,28 @@ Retrieve references of all known data types absolute references and names
 Right True
 -}
 knownTypesRefs :: FF (AllKnown (AbsRef, String)) [(AbsRef, String)]
-knownTypesRefs
+knownTypesRefs =
   -- (map (second (\(Z.String s) -> s)) <$>) <$>
- = funCall AllKnown
+  funCall AllKnown
 
 {- |
 Retrieve all known data types
 
+>>> import ZM
 >>> (("Char" `elem`) . map (convert . declName . snd) <$>) <$> run knownTypes
 Right True
-
 -}
 knownTypes :: FF (AllKnown (AbsRef, AbsADT)) [(AbsRef, AbsADT)]
 knownTypes = funCall AllKnown
 
 -- knownTypes = ((M.fromList <$>) <$>) . funCall AllKnown
+
 {- |
 Retrieve an ADT by its absolute reference
 
-$setup
+\$setup
 >>> import Data.Map
+>>> import ZM
 >>> [(boolRef,boolADT)] = toList $ absEnv (Proxy :: Proxy Bool)
 
 >>> ((== boolADT) <$>) <$> run (solveAbsRef boolRef)
@@ -127,35 +143,36 @@ Right True
 Right True
 -}
 getAbsTypeModel ::
-     Repo
-  -> AbsType
-  -> Connection (Function (Solve AbsRef AbsADT) AbsADT)
-  -> IO (Either String AbsTypeModel)
+  Repo ->
+  AbsType ->
+  Connection (Function (Solve AbsRef AbsADT) AbsADT) ->
+  IO (Either String AbsTypeModel)
 getAbsTypeModel repo t conn =
-  (TypeModel t . M.fromList <$>) <$>
-  addAbsRefsRec repo (Right []) (references t) conn
+  (TypeModel t . M.fromList <$>)
+    <$> addAbsRefsRec repo (Right []) (references t) conn
 
 addAbsRefsRec ::
-     Repo
-  -> Either String [(AbsRef, AbsADT)]
-  -> [AbsRef]
-  -> Connection (Function (Solve AbsRef AbsADT) AbsADT)
-  -> IO (Either String [(AbsRef, AbsADT)])
+  Repo ->
+  Either String [(AbsRef, AbsADT)] ->
+  [AbsRef] ->
+  Connection (Function (Solve AbsRef AbsADT) AbsADT) ->
+  IO (Either String [(AbsRef, AbsADT)])
 addAbsRefsRec repo r rs conn =
   foldM
-    (\er ref ->
-       case er of
-         Left e   -> return $ Left e
-         Right rs -> addAbsRefRec repo rs ref conn)
+    ( \er ref ->
+        case er of
+          Left e -> return $ Left e
+          Right rs -> addAbsRefRec repo rs ref conn
+    )
     r
     rs
 
 addAbsRefRec ::
-     Repo
-  -> [(AbsRef, AbsADT)]
-  -> AbsRef
-  -> Connection (Function (Solve AbsRef AbsADT) AbsADT)
-  -> IO (Either String [(AbsRef, AbsADT)])
+  Repo ->
+  [(AbsRef, AbsADT)] ->
+  AbsRef ->
+  Connection (Function (Solve AbsRef AbsADT) AbsADT) ->
+  IO (Either String [(AbsRef, AbsADT)])
 addAbsRefRec repo rs ref conn = do
   eadt <- getAbsRef repo ref conn
   case eadt of
@@ -164,10 +181,10 @@ addAbsRefRec repo rs ref conn = do
       addAbsRefsRec repo (Right $ (ref, adt) : rs) (innerReferences adt) conn
 
 getAbsRef ::
-     Repo
-  -> AbsRef
-  -> Connection (Function (Solve AbsRef AbsADT) AbsADT)
-  -> IO (Either String AbsADT)
+  Repo ->
+  AbsRef ->
+  Connection (Function (Solve AbsRef AbsADT) AbsADT) ->
+  IO (Either String AbsADT)
 getAbsRef repo ref conn = do
   rr <- get repo ref
   case rr of

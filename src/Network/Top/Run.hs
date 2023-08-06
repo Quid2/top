@@ -1,30 +1,36 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 
 -- |Run processed connected to Top
-module Network.Top.Run
-  ( runAppForever
-  , runApp
-  , runAppWith
-  , run
-  ) where
+module Network.Top.Run (
+  runAppForever,
+  runApp,
+  runAppWith,
+  run,
+) where
 
-import           Data.ByteString   (ByteString, copy, unpack)
-import           Network.Top.Types
-import           Network.Top.Util
-import           Network.Top.WSApp
-import           ZM
+import Data.ByteString (ByteString, copy, unpack)
+import Network.Top.Types
+import Network.Top.Util
+import Network.Top.WSApp (runWSApp)
+import ZM
 
--- |Permanently connect an application to a typed channel.
--- |Restart application in case of network or application failure.
--- |NOTE: does not provide a way to preserve application's state
+{- |Permanently connect an application to a typed channel.
+ |Restart application in case of network or application failure.
+ |NOTE: does not provide a way to preserve application's state
+-}
 runAppForever ::
-     (Model (router a), Flat (router a), Show (router a), Flat a, Show a)
-  => Config -- ^ Top configuration
-  -> router a -- ^ Routing protocol
-  -> App a r -- ^ Application to connect
-  -> IO r -- ^ Value returned from the application
+  (Model (router a), Flat (router a), Show (router a), Flat a, Show a) =>
+  -- | Top configuration
+  Config ->
+  -- | Routing protocol
+  router a ->
+  -- | Application to connect
+  App a r ->
+  -- | Value returned from the application
+  IO r
 runAppForever cfg router = runForever (runApp cfg router)
-  -- runAppForever cfg router app =
+
+-- runAppForever cfg router app =
 
 --   forever $ do
 --     Left (ex :: SomeException) <-
@@ -41,12 +47,13 @@ runAppForever cfg router = runForever (runApp cfg router)
 --     threadDelay $ seconds 5
 runForever connMaker app =
   forever $ do
+    -- BUG: pattern failure if app exists without an error
     Left (ex :: SomeException) <-
       try $
-      connMaker $ \conn -> do
-        liftIO $ dbgS "connected"
-        app conn
-          -- Something went wrong, wait a few seconds and restart
+        connMaker $ \conn -> do
+          liftIO $ dbgS "connected"
+          app conn
+    -- Something went wrong, wait a few seconds and restart
     dbg
       [ "Exited loop with error"
       , concat ["'", show ex, "'"]
@@ -56,13 +63,15 @@ runForever connMaker app =
 
 -- |Connect an application to a ByType channel using the default configuration.
 run ::
-     (Flat a, Show a, Model a)
-  => App a r -- ^ Application to connect
-  -> IO r -- ^ Final value returned from the application
+  (Flat a, Show a, Model a) =>
+  -- | Application to connect
+  App a r ->
+  -- | Final value returned from the application
+  IO r
 run = runApp def ByType
 
 {- |Connect an application to a typed channel.
-$setup
+\$setup
 >>> wssConfig = Config (WebSocketAddress True (SocketAddress (DNSAddress "quid2.net") (HostPort 443)) "/ws") -- (20*1000)
 
 >>> runApp def ByType $ \conn -> output conn True >> print "DONE"
@@ -70,14 +79,17 @@ $setup
 
 -- >>> runApp wssConfig ByType $ \conn -> output conn True >> print "DONE"
 -- "DONE"
-
 -}
 runApp ::
-     (Model (router a), Flat (router a), Show (router a), Flat a, Show a)
-  => Config -- ^ Top configuration
-  -> router a -- ^ Routing protocol
-  -> App a r -- ^ Application to connect
-  -> IO r -- ^ Final value returned from the application
+  (Model (router a), Flat (router a), Show (router a), Flat a, Show a) =>
+  -- | Top configuration
+  Config ->
+  -- | Routing protocol
+  router a ->
+  -- | Application to connect
+  App a r ->
+  -- | Final value returned from the application
+  IO r
 runApp cfg router app = do
   dbg ["run", show router]
   runAppWith
@@ -87,36 +99,41 @@ runApp cfg router app = do
 
 -- |Connect an application to a typed channel
 runAppWith ::
-     Config -- ^ Top configuration
-  -> TypedBLOB -- ^ Routing protocol
-  -> App ByteString r -- ^ Application to connect
-  -> IO r -- ^ Final value returned from the application
+  -- | Top configuration
+  Config ->
+  -- | Routing protocol
+  TypedBLOB ->
+  -- | Application to connect
+  App ByteString r ->
+  -- | Final value returned from the application
+  IO r
 runAppWith cfg routerBin app = run cfg 1
-  where
-    run _ 4 = errIn "Too many redirects"
-    run cfg n = do
-      res <-
-        runWSApp cfg $ \conn -> do
-          send conn routerBin
-          dbgS "Wait for CHATS answer"
-          r :: WSChannelResult <- receive conn
-          dbgS $ unwords ["Received CHATS answer", show r]
-          case r of
-            Failure why  -> errIn why
-            Success      -> Right <$> app conn -- (Connection (receive conn) (send conn) (close conn))
+ where
+  run _ 4 = errIn "Too many redirects"
+  run cfg n = do
+    res <-
+      runWSApp cfg $ \conn -> do
+        send conn routerBin
+        dbgS "Wait for CHATS answer"
+        r :: WSChannelResult <- receive conn
+        dbgS $ unwords ["Received CHATS answer", show r]
+        case r of
+          Failure why -> errIn why
+          Success -> Right <$> app conn -- (Connection (receive conn) (send conn) (close conn))
           --Success -> Right <$> app (Connection (receive conn) (send conn) (close conn))
-            RetryAt addr -> return (Left $ cfg {accessPoint = addr})
-      case res of
-        Left cfg' -> run cfg' (n + 1)
-        Right r   -> return r
-    errIn msg = dbg ["Failure", msg] >> error msg
+          RetryAt addr -> return (Left $ cfg{accessPoint = addr})
+    case res of
+      Left cfg' -> run cfg' (n + 1)
+      Right r -> return r
+  errIn msg = dbg ["Failure", msg] >> error msg
 
 -- |Send a value on a typed connection
 send :: (Show a, Flat a) => WSConnection -> a -> IO ()
 send conn v = do
   let e = flat v
   output conn e
-  --dbg ["sent",show v,"as",show $ L.unpack e]
+
+--dbg ["sent",show v,"as",show $ L.unpack e]
 
 -- |Receive a value from a typed connection
 receive :: (Show a, Flat a) => WSConnection -> IO a
@@ -128,6 +145,7 @@ receive conn = do
   dbg ["received data", take 200 $ show ue, " of length ", show $ length ue]
   dbg ["value is", take 200 $ show ev]
   either (\ex -> error $ unwords ["receive error", show ex]) return ev
+
 -- receive :: Flat a => WSConnection -> IO (Maybe a)
 -- receive conn = do
 --   mbs <- input conn
