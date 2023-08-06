@@ -1,5 +1,5 @@
 name:               top
-version:            0.2.13
+version:            0.2.15
 synopsis:           Top (typed oriented protocol) API
 description:        See the <http://github.com/Quid2/top online tutorial>.
 homepage:           http://github.com/Quid2/top
@@ -8,7 +8,7 @@ license:            BSD3
 license-file:       LICENSE
 author:             Pasqualino `Titto` Assini
 maintainer:         tittoassini@gmail.com
-copyright:          Copyright: (c) 2016-2020 Pasqualino `Titto` Assini
+copyright:          Copyright: (c) 2016-2023 Pasqualino `Titto` Assini
 cabal-version:      >=1.10
 build-type:         Simple
 tested-with:        GHC ==7.10.3 || ==8.0.2 || ==8.2.2
@@ -83,13 +83,14 @@ library
     , data-default-class
     , deepseq             >=1.4      && <1.5
     , extra               >=1.4.10   && <2
-    , flat                >=0.4      && <0.5
+    , flat                >=0.6      && <0.7
     , model
     , mtl                 >=2.2.1    && <2.3
     , pipes               >=4.1.9    && <5
     , pretty              >=1.1.2    && <1.2
     , template-haskell    >=2.10.0.0 && <3
     , text
+    , time
     , transformers        >=0.4.2.0  && <0.6
     , zm                  >=0.3
 
@@ -122,11 +123,12 @@ test-suite pattern
   main-is:          PatternSpec.hs
   other-modules:
     Test.Data
-    Test.Data2
     Test.Data.Flat
     Test.Data.Model
+    Test.Data2
     Test.Data2.Flat
     Test.Data3
+
   build-depends:
       base
     , bytestring
@@ -154,5 +156,6 @@ test-suite doc
       base
     , doctest    >=0.11.1
     , filemanip  >=0.3.6.3
+    , time
 
   hs-source-dirs:   test

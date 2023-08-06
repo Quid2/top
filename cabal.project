@@ -1,0 +1,17 @@
+
+packages: . 
+
+ignore-project: False
+
+tests: True
+
+source-repository-package
+    type: git
+    location: https://github.com/tittoassini/doctest
+    tag: 3954e94449901764e28cfed1c35490af970e9b01
+
+
+source-repository-package
+    type: git
+    location: https://github.com/Quid2/zm
+    tag: 76474842efbd7d40ce5b2cb4b3b67e74852c91ea
