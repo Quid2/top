@@ -35,9 +35,9 @@ asPatternM = (conv <$>)
   where
     conv :: TH.Pat -> IPattern
     conv pat = case pat of
-      ConP n [] | name n == "[]" -> PCon "Nil" []
+      ConP n _types [] | name n == "[]" -> PCon "Nil" []
 
-      ConP n args -> PCon (name n) $ map conv args
+      ConP n _types args -> PCon (name n) $ map conv args
 
       ListP ps -> convList $ map conv ps
 
