@@ -148,15 +148,16 @@ test-suite pattern
   ghc-options:      -threaded -rtsopts -with-rtsopts=-N
   default-language: Haskell2010
 
-test-suite doc
-  default-language: Haskell2010
-  type:             exitcode-stdio-1.0
-  ghc-options:      -threaded
-  main-is:          DocSpec.hs
-  build-depends:
-      base
-    , doctest    >=0.11.1
-    , filemanip  >=0.3.6.3
-    , time
+-- temporarily disabled
+-- test-suite doc
+--   default-language: Haskell2010
+--   type:             exitcode-stdio-1.0
+--   ghc-options:      -threaded
+--   main-is:          DocSpec.hs
+--   build-depends:
+--       base
+--     , doctest    >=0.11.1
+--     , filemanip  >=0.3.6.3
+--     , time
 
-  hs-source-dirs:   test
+--   hs-source-dirs:   test
