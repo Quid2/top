@@ -42,7 +42,33 @@ insert key value = modify (\(DBState st) -> DBState (M.insert key value st))
 getByRef :: AbsRef -> Query DBState (Maybe AbsADT)
 getByRef key = asks (\(DBState st) -> M.lookup key st)
 
-makeAcidic ''DBState ['whole, 'insert, 'getByRef]
+$(deriveSafeCopy 0 'base ''Type)
+
+$(deriveSafeCopy 0 'base ''NonEmptyList)
+
+$(deriveSafeCopy 0 'base ''UnicodeSymbol)
+
+$(deriveSafeCopy 0 'base ''UnicodeLetter)
+
+$(deriveSafeCopy 0 'base ''UnicodeLetterOrNumberOrLine)
+
+$(deriveSafeCopy 0 'base ''Identifier)
+
+$(deriveSafeCopy 0 'base ''SHA3_256_6)
+
+$(deriveSafeCopy 0 'base ''SHAKE128_48)
+
+$(deriveSafeCopy 0 'base ''ConTree)
+
+$(deriveSafeCopy 0 'base ''ADT)
+
+$(deriveSafeCopy 0 'base ''ADTRef)
+
+$(deriveSafeCopy 0 'base ''AbsRef)
+
+$(deriveSafeCopy 0 'base ''DBState)
+
+$(makeAcidic ''DBState ['whole, 'insert, 'getByRef])
 
 -- API
 wholeDB :: DB -> IO DBState
@@ -71,28 +97,3 @@ closeDB = closeAcidState
 dbDir :: FilePath -> FilePath
 dbDir dir = dir </> "ADTS"
 
-$(deriveSafeCopy 0 'base ''Type)
-
-$(deriveSafeCopy 0 'base ''Identifier)
-
-$(deriveSafeCopy 0 'base ''UnicodeSymbol)
-
-$(deriveSafeCopy 0 'base ''UnicodeLetter)
-
-$(deriveSafeCopy 0 'base ''UnicodeLetterOrNumberOrLine)
-
-$(deriveSafeCopy 0 'base ''SHA3_256_6)
-
-$(deriveSafeCopy 0 'base ''SHAKE128_48)
-
-$(deriveSafeCopy 0 'base ''AbsRef)
-
-$(deriveSafeCopy 0 'base ''ConTree)
-
-$(deriveSafeCopy 0 'base ''ADTRef)
-
-$(deriveSafeCopy 0 'base ''ADT)
-
-$(deriveSafeCopy 0 'base ''NonEmptyList)
-
-$(deriveSafeCopy 0 'base ''DBState)
