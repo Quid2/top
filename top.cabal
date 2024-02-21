@@ -1,5 +1,5 @@
 name:               top
-version:            0.2.17
+version:            0.2.19
 synopsis:           Top (typed oriented protocol) API
 description:        See the <http://github.com/Quid2/top online tutorial>.
 homepage:           http://github.com/Quid2/top
@@ -13,8 +13,8 @@ cabal-version:      >=1.10
 build-type:         Simple
 tested-with:        GHC ==7.10.3 || ==8.0.2 || ==8.2.2
 extra-source-files:
-  README.md
   CHANGELOG
+  README.md
 
 -- stack710.yaml
 -- stack802.yaml
@@ -32,7 +32,7 @@ library
   if impl(ghc <8)
     build-depends: th-lift >=0.7.7 && <0.8
 
-  if impl(ghcjs -any)
+  if impl(ghcjs)
     build-depends:
         ghcjs-base  >=0.2 && <0.3
       , stm
@@ -86,13 +86,13 @@ library
     , extra               >=1.4.10   && <2
     , flat                >=0.6      && <0.7
     , model
-    , mtl                 >=2.2.1    && <2.3
+    , mtl                 >=2.2.1
     , pipes               >=4.1.9    && <5
     , pretty              >=1.1.2    && <1.2
     , template-haskell    >=2.10.0.0 && <3
     , text
     , time
-    , transformers        >=0.4.2.0  && <0.6
+    , transformers        >=0.4.2.0
     , zm                  >=0.3
 
   -- if (arch(x86_64) && flag(fast))
